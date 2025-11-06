@@ -1,0 +1,475 @@
+{
+  "analysis_date": "2025-09-30T18:08:54.875269",
+  "vault_dns": "vv-consulting-michael-mastermind.veevavault.com",
+  "execution_time": 0.5628230571746826,
+  "summary": {
+    "total_notebooks": 39,
+    "analyzed_notebooks": 39,
+    "error_notebooks": 0,
+    "total_cells": 539,
+    "total_estimated_tests": 1985
+  },
+  "categories": {
+    "Core API": {
+      "count": 5,
+      "cells": 76,
+      "tests": 281
+    },
+    "Document & Object Management": {
+      "count": 7,
+      "cells": 126,
+      "tests": 330
+    },
+    "System Management": {
+      "count": 13,
+      "cells": 192,
+      "tests": 597
+    },
+    "Configuration & Security": {
+      "count": 6,
+      "cells": 82,
+      "tests": 450
+    },
+    "Advanced Services": {
+      "count": 7,
+      "cells": 43,
+      "tests": 241
+    },
+    "Baseline Testing": {
+      "count": 1,
+      "cells": 20,
+      "tests": 86
+    }
+  },
+  "notebooks": [
+    {
+      "name": "01_authentication.ipynb",
+      "path": "/Users/mp/Documents/Code/VeevaTools/veevatools/veevavault/notebook_tests/01_authentication.ipynb",
+      "status": "analyzed",
+      "cells": 14,
+      "test_methods": 6,
+      "estimated_test_count": 68,
+      "category": "Core API",
+      "execution_time": 0,
+      "error": null
+    },
+    {
+      "name": "02_direct_data.ipynb",
+      "path": "/Users/mp/Documents/Code/VeevaTools/veevatools/veevavault/notebook_tests/02_direct_data.ipynb",
+      "status": "analyzed",
+      "cells": 12,
+      "test_methods": 2,
+      "estimated_test_count": 32,
+      "category": "Core API",
+      "execution_time": 0,
+      "error": null
+    },
+    {
+      "name": "03_vault_query_language_vql.ipynb",
+      "path": "/Users/mp/Documents/Code/VeevaTools/veevatools/veevavault/notebook_tests/03_vault_query_language_vql.ipynb",
+      "status": "analyzed",
+      "cells": 12,
+      "test_methods": 5,
+      "estimated_test_count": 57,
+      "category": "Core API",
+      "execution_time": 0,
+      "error": null
+    },
+    {
+      "name": "04_metadata_definition_language_mdl.ipynb",
+      "path": "/Users/mp/Documents/Code/VeevaTools/veevatools/veevavault/notebook_tests/04_metadata_definition_language_mdl.ipynb",
+      "status": "analyzed",
+      "cells": 14,
+      "test_methods": 7,
+      "estimated_test_count": 55,
+      "category": "Core API",
+      "execution_time": 0,
+      "error": null
+    },
+    {
+      "name": "05_documents.ipynb",
+      "path": "/Users/mp/Documents/Code/VeevaTools/veevatools/veevavault/notebook_tests/05_documents.ipynb",
+      "status": "analyzed",
+      "cells": 24,
+      "test_methods": 6,
+      "estimated_test_count": 69,
+      "category": "Core API",
+      "execution_time": 0,
+      "error": null
+    },
+    {
+      "name": "06_binders.ipynb",
+      "path": "/Users/mp/Documents/Code/VeevaTools/veevatools/veevavault/notebook_tests/06_binders.ipynb",
+      "status": "analyzed",
+      "cells": 30,
+      "test_methods": 1,
+      "estimated_test_count": 77,
+      "category": "Document & Object Management",
+      "execution_time": 0,
+      "error": null
+    },
+    {
+      "name": "07_business_models.ipynb",
+      "path": "/Users/mp/Documents/Code/VeevaTools/veevatools/veevavault/notebook_tests/07_business_models.ipynb",
+      "status": "analyzed",
+      "cells": 19,
+      "test_methods": 0,
+      "estimated_test_count": 53,
+      "category": "Document & Object Management",
+      "execution_time": 0,
+      "error": null
+    },
+    {
+      "name": "08_document_binder_roles.ipynb",
+      "path": "/Users/mp/Documents/Code/VeevaTools/veevatools/veevavault/notebook_tests/08_document_binder_roles.ipynb",
+      "status": "analyzed",
+      "cells": 17,
+      "test_methods": 0,
+      "estimated_test_count": 43,
+      "category": "Document & Object Management",
+      "execution_time": 0,
+      "error": null
+    },
+    {
+      "name": "09_workflows.ipynb",
+      "path": "/Users/mp/Documents/Code/VeevaTools/veevatools/veevavault/notebook_tests/09_workflows.ipynb",
+      "status": "analyzed",
+      "cells": 16,
+      "test_methods": 0,
+      "estimated_test_count": 46,
+      "category": "Document & Object Management",
+      "execution_time": 0,
+      "error": null
+    },
+    {
+      "name": "10_document_lifecycle_workflows.ipynb",
+      "path": "/Users/mp/Documents/Code/VeevaTools/veevatools/veevavault/notebook_tests/10_document_lifecycle_workflows.ipynb",
+      "status": "analyzed",
+      "cells": 19,
+      "test_methods": 1,
+      "estimated_test_count": 51,
+      "category": "Document & Object Management",
+      "execution_time": 0,
+      "error": null
+    },
+    {
+      "name": "10_jobs.ipynb",
+      "path": "/Users/mp/Documents/Code/VeevaTools/veevatools/veevavault/notebook_tests/10_jobs.ipynb",
+      "status": "analyzed",
+      "cells": 16,
+      "test_methods": 0,
+      "estimated_test_count": 41,
+      "category": "Document & Object Management",
+      "execution_time": 0,
+      "error": null
+    },
+    {
+      "name": "10_jobs_setup.ipynb",
+      "path": "/Users/mp/Documents/Code/VeevaTools/veevatools/veevavault/notebook_tests/10_jobs_setup.ipynb",
+      "status": "analyzed",
+      "cells": 9,
+      "test_methods": 0,
+      "estimated_test_count": 19,
+      "category": "Document & Object Management",
+      "execution_time": 0,
+      "error": null
+    },
+    {
+      "name": "11_audit.ipynb",
+      "path": "/Users/mp/Documents/Code/VeevaTools/veevatools/veevavault/notebook_tests/11_audit.ipynb",
+      "status": "analyzed",
+      "cells": 16,
+      "test_methods": 0,
+      "estimated_test_count": 35,
+      "category": "System Management",
+      "execution_time": 0,
+      "error": null
+    },
+    {
+      "name": "11_object_lifecycle_workflows.ipynb",
+      "path": "/Users/mp/Documents/Code/VeevaTools/veevatools/veevavault/notebook_tests/11_object_lifecycle_workflows.ipynb",
+      "status": "analyzed",
+      "cells": 19,
+      "test_methods": 1,
+      "estimated_test_count": 50,
+      "category": "System Management",
+      "execution_time": 0,
+      "error": null
+    },
+    {
+      "name": "12_users.ipynb",
+      "path": "/Users/mp/Documents/Code/VeevaTools/veevatools/veevavault/notebook_tests/12_users.ipynb",
+      "status": "analyzed",
+      "cells": 17,
+      "test_methods": 0,
+      "estimated_test_count": 45,
+      "category": "System Management",
+      "execution_time": 0,
+      "error": null
+    },
+    {
+      "name": "13_groups.ipynb",
+      "path": "/Users/mp/Documents/Code/VeevaTools/veevatools/veevavault/notebook_tests/13_groups.ipynb",
+      "status": "analyzed",
+      "cells": 18,
+      "test_methods": 0,
+      "estimated_test_count": 42,
+      "category": "System Management",
+      "execution_time": 0,
+      "error": null
+    },
+    {
+      "name": "13_scim.ipynb",
+      "path": "/Users/mp/Documents/Code/VeevaTools/veevatools/veevavault/notebook_tests/13_scim.ipynb",
+      "status": "analyzed",
+      "cells": 18,
+      "test_methods": 3,
+      "estimated_test_count": 56,
+      "category": "System Management",
+      "execution_time": 0,
+      "error": null
+    },
+    {
+      "name": "13_scim_setup.ipynb",
+      "path": "/Users/mp/Documents/Code/VeevaTools/veevatools/veevavault/notebook_tests/13_scim_setup.ipynb",
+      "status": "analyzed",
+      "cells": 10,
+      "test_methods": 0,
+      "estimated_test_count": 17,
+      "category": "System Management",
+      "execution_time": 0,
+      "error": null
+    },
+    {
+      "name": "14_document_templates.ipynb",
+      "path": "/Users/mp/Documents/Code/VeevaTools/veevatools/veevavault/notebook_tests/14_document_templates.ipynb",
+      "status": "analyzed",
+      "cells": 18,
+      "test_methods": 0,
+      "estimated_test_count": 39,
+      "category": "System Management",
+      "execution_time": 0,
+      "error": null
+    },
+    {
+      "name": "14_document_templates_setup.ipynb",
+      "path": "/Users/mp/Documents/Code/VeevaTools/veevatools/veevavault/notebook_tests/14_document_templates_setup.ipynb",
+      "status": "analyzed",
+      "cells": 10,
+      "test_methods": 0,
+      "estimated_test_count": 12,
+      "category": "System Management",
+      "execution_time": 0,
+      "error": null
+    },
+    {
+      "name": "14_groups.ipynb",
+      "path": "/Users/mp/Documents/Code/VeevaTools/veevatools/veevavault/notebook_tests/14_groups.ipynb",
+      "status": "analyzed",
+      "cells": 9,
+      "test_methods": 0,
+      "estimated_test_count": 42,
+      "category": "System Management",
+      "execution_time": 0,
+      "error": null
+    },
+    {
+      "name": "15_analytics.ipynb",
+      "path": "/Users/mp/Documents/Code/VeevaTools/veevatools/veevavault/notebook_tests/15_analytics.ipynb",
+      "status": "analyzed",
+      "cells": 18,
+      "test_methods": 0,
+      "estimated_test_count": 35,
+      "category": "System Management",
+      "execution_time": 0,
+      "error": null
+    },
+    {
+      "name": "15_analytics_fixed.ipynb",
+      "path": "/Users/mp/Documents/Code/VeevaTools/veevatools/veevavault/notebook_tests/15_analytics_fixed.ipynb",
+      "status": "analyzed",
+      "cells": 11,
+      "test_methods": 5,
+      "estimated_test_count": 93,
+      "category": "System Management",
+      "execution_time": 0,
+      "error": null
+    },
+    {
+      "name": "15_analytics_setup.ipynb",
+      "path": "/Users/mp/Documents/Code/VeevaTools/veevatools/veevavault/notebook_tests/15_analytics_setup.ipynb",
+      "status": "analyzed",
+      "cells": 10,
+      "test_methods": 0,
+      "estimated_test_count": 14,
+      "category": "System Management",
+      "execution_time": 0,
+      "error": null
+    },
+    {
+      "name": "15_picklists.ipynb",
+      "path": "/Users/mp/Documents/Code/VeevaTools/veevatools/veevavault/notebook_tests/15_picklists.ipynb",
+      "status": "analyzed",
+      "cells": 18,
+      "test_methods": 0,
+      "estimated_test_count": 117,
+      "category": "System Management",
+      "execution_time": 0,
+      "error": null
+    },
+    {
+      "name": "16_expected_document_lists.ipynb",
+      "path": "/Users/mp/Documents/Code/VeevaTools/veevatools/veevavault/notebook_tests/16_expected_document_lists.ipynb",
+      "status": "analyzed",
+      "cells": 11,
+      "test_methods": 7,
+      "estimated_test_count": 62,
+      "category": "Configuration & Security",
+      "execution_time": 0,
+      "error": null
+    },
+    {
+      "name": "16_expected_document_lists_fixed.ipynb",
+      "path": "/Users/mp/Documents/Code/VeevaTools/veevatools/veevavault/notebook_tests/16_expected_document_lists_fixed.ipynb",
+      "status": "analyzed",
+      "cells": 11,
+      "test_methods": 5,
+      "estimated_test_count": 77,
+      "category": "Configuration & Security",
+      "execution_time": 0,
+      "error": null
+    },
+    {
+      "name": "17_security_policies.ipynb",
+      "path": "/Users/mp/Documents/Code/VeevaTools/veevatools/veevavault/notebook_tests/17_security_policies.ipynb",
+      "status": "analyzed",
+      "cells": 22,
+      "test_methods": 8,
+      "estimated_test_count": 125,
+      "category": "Configuration & Security",
+      "execution_time": 0,
+      "error": null
+    },
+    {
+      "name": "18_domain_information.ipynb",
+      "path": "/Users/mp/Documents/Code/VeevaTools/veevatools/veevavault/notebook_tests/18_domain_information.ipynb",
+      "status": "analyzed",
+      "cells": 20,
+      "test_methods": 4,
+      "estimated_test_count": 86,
+      "category": "Configuration & Security",
+      "execution_time": 0,
+      "error": null
+    },
+    {
+      "name": "19_configuration_migration.ipynb",
+      "path": "/Users/mp/Documents/Code/VeevaTools/veevatools/veevavault/notebook_tests/19_configuration_migration.ipynb",
+      "status": "analyzed",
+      "cells": 11,
+      "test_methods": 5,
+      "estimated_test_count": 62,
+      "category": "Configuration & Security",
+      "execution_time": 0,
+      "error": null
+    },
+    {
+      "name": "20_sandbox_vaults.ipynb",
+      "path": "/Users/mp/Documents/Code/VeevaTools/veevatools/veevavault/notebook_tests/20_sandbox_vaults.ipynb",
+      "status": "analyzed",
+      "cells": 7,
+      "test_methods": 3,
+      "estimated_test_count": 38,
+      "category": "Configuration & Security",
+      "execution_time": 0,
+      "error": null
+    },
+    {
+      "name": "21_logs.ipynb",
+      "path": "/Users/mp/Documents/Code/VeevaTools/veevatools/veevavault/notebook_tests/21_logs.ipynb",
+      "status": "analyzed",
+      "cells": 7,
+      "test_methods": 5,
+      "estimated_test_count": 45,
+      "category": "Advanced Services",
+      "execution_time": 0,
+      "error": null
+    },
+    {
+      "name": "22_file_staging.ipynb",
+      "path": "/Users/mp/Documents/Code/VeevaTools/veevatools/veevavault/notebook_tests/22_file_staging.ipynb",
+      "status": "analyzed",
+      "cells": 6,
+      "test_methods": 8,
+      "estimated_test_count": 36,
+      "category": "Advanced Services",
+      "execution_time": 0,
+      "error": null
+    },
+    {
+      "name": "23_vault_loader.ipynb",
+      "path": "/Users/mp/Documents/Code/VeevaTools/veevatools/veevavault/notebook_tests/23_vault_loader.ipynb",
+      "status": "analyzed",
+      "cells": 6,
+      "test_methods": 6,
+      "estimated_test_count": 29,
+      "category": "Advanced Services",
+      "execution_time": 0,
+      "error": null
+    },
+    {
+      "name": "24_bulk_translation.ipynb",
+      "path": "/Users/mp/Documents/Code/VeevaTools/veevatools/veevavault/notebook_tests/24_bulk_translation.ipynb",
+      "status": "analyzed",
+      "cells": 6,
+      "test_methods": 7,
+      "estimated_test_count": 33,
+      "category": "Advanced Services",
+      "execution_time": 0,
+      "error": null
+    },
+    {
+      "name": "25_jobs.ipynb",
+      "path": "/Users/mp/Documents/Code/VeevaTools/veevatools/veevavault/notebook_tests/25_jobs.ipynb",
+      "status": "analyzed",
+      "cells": 6,
+      "test_methods": 6,
+      "estimated_test_count": 30,
+      "category": "Advanced Services",
+      "execution_time": 0,
+      "error": null
+    },
+    {
+      "name": "26_vault_java_sdk.ipynb",
+      "path": "/Users/mp/Documents/Code/VeevaTools/veevatools/veevavault/notebook_tests/26_vault_java_sdk.ipynb",
+      "status": "analyzed",
+      "cells": 6,
+      "test_methods": 8,
+      "estimated_test_count": 42,
+      "category": "Advanced Services",
+      "execution_time": 0,
+      "error": null
+    },
+    {
+      "name": "27_custom_pages.ipynb",
+      "path": "/Users/mp/Documents/Code/VeevaTools/veevatools/veevavault/notebook_tests/27_custom_pages.ipynb",
+      "status": "analyzed",
+      "cells": 6,
+      "test_methods": 0,
+      "estimated_test_count": 26,
+      "category": "Advanced Services",
+      "execution_time": 0,
+      "error": null
+    },
+    {
+      "name": "BaselineVaultAPITest.ipynb",
+      "path": "/Users/mp/Documents/Code/VeevaTools/veevatools/veevavault/notebook_tests/BaselineVaultAPITest.ipynb",
+      "status": "analyzed",
+      "cells": 20,
+      "test_methods": 4,
+      "estimated_test_count": 86,
+      "category": "Baseline Testing",
+      "execution_time": 0,
+      "error": null
+    }
+  ]
+}
