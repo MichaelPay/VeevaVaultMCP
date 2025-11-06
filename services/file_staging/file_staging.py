@@ -90,7 +90,7 @@ class FileStagingService:
         if byte_range:
             headers["Range"] = f"bytes={byte_range[0]}-{byte_range[1]}"
 
-        return self.client.api_call(url, method="GET", headers=headers, return_raw=True)
+        return self.client.api_call(url, method="GET", headers=headers, raw_response=True)
 
     def create_folder_or_file(self, path, kind, file=None, overwrite=False):
         """
@@ -135,11 +135,12 @@ class FileStagingService:
         if kind == "file" and overwrite:
             data["overwrite"] = "true"
 
-        files = {}
         if kind == "file" and file:
-            files = {"file": open(file, "rb")}
-
-        return self.client.api_call(url, method="POST", data=data, files=files)
+            with open(file, "rb") as f:
+                files = {"file": f}
+                return self.client.api_call(url, method="POST", data=data, files=files)
+        else:
+            return self.client.api_call(url, method="POST", data=data, files={})
 
     def update_folder_or_file(self, item_path, parent=None, name=None):
         """

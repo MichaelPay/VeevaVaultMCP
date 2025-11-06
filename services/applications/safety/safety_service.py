@@ -52,19 +52,20 @@ class SafetyService:
         """
         endpoint = f"api/{self.client.LatestAPIversion}/app/safety/intake/inbox-item"
 
-        files = {"file": open(file_path, "rb")}
-        data = {"format": format}
+        with open(file_path, "rb") as f:
+            files = {"file": f}
+            data = {"format": format}
 
-        if origin_organization:
-            data["origin-organization"] = origin_organization
-        if organization:
-            data["organization"] = organization
-        if transmission_profile:
-            data["transmission-profile"] = transmission_profile
+            if origin_organization:
+                data["origin-organization"] = origin_organization
+            if organization:
+                data["organization"] = organization
+            if transmission_profile:
+                data["transmission-profile"] = transmission_profile
 
-        return self.client.api_call(
-            endpoint=endpoint, method="POST", files=files, data=data
-        )
+            return self.client.api_call(
+                endpoint=endpoint, method="POST", files=files, data=data
+            )
 
     def intake_imported_case(
         self,
@@ -95,17 +96,18 @@ class SafetyService:
         """
         endpoint = f"api/{self.client.LatestAPIversion}/app/safety/intake/imported-case"
 
-        files = {"file": open(file_path, "rb")}
-        data = {"format": format}
+        with open(file_path, "rb") as f:
+            files = {"file": f}
+            data = {"format": format}
 
-        if organization:
-            data["organization"] = organization
-        if origin_organization:
-            data["origin-organization"] = origin_organization
+            if organization:
+                data["organization"] = organization
+            if origin_organization:
+                data["origin-organization"] = origin_organization
 
-        return self.client.api_call(
-            endpoint=endpoint, method="POST", files=files, data=data
-        )
+            return self.client.api_call(
+                endpoint=endpoint, method="POST", files=files, data=data
+            )
 
     def retrieve_intake_status(self, inbound_id: str) -> Dict[str, Any]:
         """
@@ -200,35 +202,49 @@ class SafetyService:
         endpoint = f"api/{self.client.LatestAPIversion}/app/safety/ai/intake?API_Name={api_name}"
 
         files = {}
-        if isinstance(intake_json, str) and (
-            intake_json.endswith(".json")
-            or intake_json.startswith("{")
-            or intake_json.startswith("[")
-        ):
-            # If it's a file path or raw JSON
-            if intake_json.endswith(".json"):
-                files["intake_json"] = open(intake_json, "rb")
+        intake_json_file = None
+        intake_form_file = None
+
+        try:
+            # Handle intake_json
+            if isinstance(intake_json, str) and (
+                intake_json.endswith(".json")
+                or intake_json.startswith("{")
+                or intake_json.startswith("[")
+            ):
+                # If it's a file path or raw JSON
+                if intake_json.endswith(".json"):
+                    intake_json_file = open(intake_json, "rb")
+                    files["intake_json"] = intake_json_file
+                else:
+                    files["intake_json"] = intake_json
             else:
+                # If it's already a file-like object
                 files["intake_json"] = intake_json
-        else:
-            # If it's already a file-like object
-            files["intake_json"] = intake_json
 
-        if intake_form:
-            if isinstance(intake_form, str):
-                files["intake_form"] = open(intake_form, "rb")
-            else:
-                files["intake_form"] = intake_form
+            # Handle intake_form
+            if intake_form:
+                if isinstance(intake_form, str):
+                    intake_form_file = open(intake_form, "rb")
+                    files["intake_form"] = intake_form_file
+                else:
+                    files["intake_form"] = intake_form
 
-        content_type = "multipart/form-data" if intake_form else "application/json"
+            content_type = "multipart/form-data" if intake_form else "application/json"
 
-        headers = {
-            "Content-Type": content_type,
-        }
+            headers = {
+                "Content-Type": content_type,
+            }
 
-        return self.client.api_call(
-            endpoint=endpoint, method="POST", headers=headers, files=files
-        )
+            return self.client.api_call(
+                endpoint=endpoint, method="POST", headers=headers, files=files
+            )
+        finally:
+            # Close any files we opened
+            if intake_json_file:
+                intake_json_file.close()
+            if intake_form_file:
+                intake_form_file.close()
 
     def import_narrative(
         self,
@@ -348,13 +364,16 @@ class SafetyService:
 
         # Prepare file
         if isinstance(narratives_file, str):
-            files = {"narratives": open(narratives_file, "rb")}
+            with open(narratives_file, "rb") as f:
+                files = {"narratives": f}
+                return self.client.api_call(
+                    endpoint=endpoint, method="POST", headers=headers, files=files
+                )
         else:
             files = {"narratives": narratives_file}
-
-        return self.client.api_call(
-            endpoint=endpoint, method="POST", headers=headers, files=files
-        )
+            return self.client.api_call(
+                endpoint=endpoint, method="POST", headers=headers, files=files
+            )
 
     def retrieve_bulk_import_status(self, import_id: str) -> Dict[str, Any]:
         """

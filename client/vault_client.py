@@ -19,7 +19,7 @@ class VaultClient:
         self.vaultDNS = None
         self.APIheaders = None
         self.APIversionList = []
-        self.LatestAPIversion = "v25.1"
+        self.LatestAPIversion = "v25.2"
 
         # Property alias for service classes that expect session_id vs sessionId
         self._session_id = None

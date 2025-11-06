@@ -168,13 +168,16 @@ class UserService:
             params["domain"] = "true"
 
         # Handle file upload if profile image is provided
-        files = None
         if profile_image:
-            files = {"file": open(profile_image, "rb")}
-
-        return self.client.api_call(
-            url, method="POST", data=user_data, params=params, files=files
-        )
+            with open(profile_image, "rb") as f:
+                files = {"file": f}
+                return self.client.api_call(
+                    url, method="POST", data=user_data, params=params, files=files
+                )
+        else:
+            return self.client.api_call(
+                url, method="POST", data=user_data, params=params, files=None
+            )
 
     def create_multiple_users(
         self,

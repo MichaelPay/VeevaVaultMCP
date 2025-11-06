@@ -106,11 +106,11 @@ class DocumentTemplatesService(BaseDocumentService):
             headers["Content-Type"] = "multipart/form-data"
 
             # Prepare form data
-            files = {"file": open(file_path, "rb")}
-
-            response = self.client.api_call(
-                url, method="POST", headers=headers, files=files, data=template_data
-            )
+            with open(file_path, "rb") as f:
+                files = {"file": f}
+                response = self.client.api_call(
+                    url, method="POST", headers=headers, files=files, data=template_data
+                )
         else:
             # For controlled document templates or bulk creation
             headers["Content-Type"] = "application/json"

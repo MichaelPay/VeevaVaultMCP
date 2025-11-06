@@ -288,13 +288,14 @@ class ObjectAttachmentsService(BaseObjectService):
 
         url = f"api/{self.client.LatestAPIversion}/vobjects/{object_name}/{object_record_id}/attachments"
 
-        files = {"file": (os.path.basename(file_path), open(file_path, "rb"))}
+        with open(file_path, "rb") as f:
+            files = {"file": (os.path.basename(file_path), f)}
 
-        data = {}
-        if description:
-            data["description"] = description
+            data = {}
+            if description:
+                data["description"] = description
 
-        return self.client.api_call(url, method="POST", files=files, data=data)
+            return self.client.api_call(url, method="POST", files=files, data=data)
 
     def create_multiple_object_record_attachments(
         self, object_name, staged_files_payload

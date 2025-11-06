@@ -157,5 +157,5 @@ class BulkTranslationService:
         """
         url = f"api/{self.client.LatestAPIversion}/services/jobs/{job_id}/errors"
         headers = {"Accept": "text/csv"}
-        response = self.client.api_call(url, headers=headers, return_raw=True)
+        response = self.client.api_call(url, headers=headers, raw_response=True)
         return response
