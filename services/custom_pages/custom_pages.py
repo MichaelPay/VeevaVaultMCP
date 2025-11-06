@@ -110,9 +110,9 @@ class CustomPagesService:
         url = f"api/{self.client.LatestAPIversion}/uicode/distributions/"
 
         # Prepare file for upload
-        files = {"file": open(zip_file_path, "rb")}
-
-        return self.client.api_call(url, method="POST", files=files)
+        with open(zip_file_path, "rb") as f:
+            files = {"file": f}
+            return self.client.api_call(url, method="POST", files=files)
 
     def delete_client_code_distribution(self, distribution_name):
         """

@@ -139,6 +139,6 @@ class ObjectAttachmentFieldsService(BaseObjectService):
 
         url = f"api/{self.client.LatestAPIversion}/vobjects/{object_name}/{object_record_id}/attachmentfields/{field_name}"
 
-        files = {"file": (os.path.basename(file_path), open(file_path, "rb"))}
-
-        return self.client.api_call(url, method="PUT", files=files)
+        with open(file_path, "rb") as f:
+            files = {"file": (os.path.basename(file_path), f)}
+            return self.client.api_call(url, method="PUT", files=files)

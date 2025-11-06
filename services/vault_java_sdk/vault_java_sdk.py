@@ -29,7 +29,7 @@ class VaultJavaSdkService:
             str: The source code content of the requested Java file.
         """
         url = f"api/{self.client.LatestAPIversion}/code/{class_name}"
-        return self.client.api_call(url, return_raw=True)
+        return self.client.api_call(url, raw_response=True)
 
     def enable_vault_extension(self, class_name):
         """
@@ -95,8 +95,9 @@ class VaultJavaSdkService:
             Maximum allowed file size is 1MB.
         """
         url = f"api/{self.client.LatestAPIversion}/code"
-        files = {"file": open(file_path, "rb")}
-        return self.client.api_call(url, method="PUT", files=files)
+        with open(file_path, "rb") as f:
+            files = {"file": f}
+            return self.client.api_call(url, method="PUT", files=files)
 
     def delete_source_code_file(self, class_name):
         """
@@ -166,7 +167,7 @@ class VaultJavaSdkService:
             str: The public key certificate (.pem) file used for Message Verification.
         """
         url = f"api/{self.client.LatestAPIversion}/services/certificate/{cert_id}"
-        return self.client.api_call(url, return_raw=True)
+        return self.client.api_call(url, raw_response=True)
 
     def retrieve_all_queues(self):
         """
