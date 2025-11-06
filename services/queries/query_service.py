@@ -1,6 +1,9 @@
 import pandas as pd
 import re
 import requests
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class QueryService:
@@ -49,6 +52,9 @@ class QueryService:
                 - data: The query results as specified in the VQL query
                 - facets: Facet information (if requested)
                 - record_properties: Record property information (if requested)
+
+        Raises:
+            VaultQueryError: If the query fails
         """
         url = f"{self.client.vaultURL}/api/{self.client.LatestAPIversion}/query"
 
@@ -69,12 +75,13 @@ class QueryService:
 
         response = requests.post(url, headers=headers, data=data).json()
 
-        if response["responseStatus"] == "FAILURE":
-            print(f"Error: {response}")
-            return None
-        else:
-            print(f"Success: {len(response['data'])} records returned.")
+        if response.get("responseStatus") == "FAILURE":
+            logger.error(f"VQL query failed: {response}")
+            # Import here to avoid circular imports
+            from veevavault.exceptions import VaultQueryError
+            raise VaultQueryError(f"Query failed: {response.get('errors', response)}")
 
+        logger.debug(f"Query successful: {len(response.get('data', []))} records returned")
         return response
 
     def bulk_query(self, query):
@@ -90,7 +97,9 @@ class QueryService:
 
         Returns:
             DataFrame: A pandas DataFrame containing all records from all pages of query results.
-                Returns None if the query fails.
+
+        Raises:
+            VaultQueryError: If the query fails
         """
         # Check if PAGESIZE is in the query
         page_count = None
@@ -98,7 +107,7 @@ class QueryService:
             page_size_match = re.search(r"(?i)PAGESIZE\s+(\d+)", query)
             if page_size_match:
                 page_count = int(page_size_match.group(1))
-                print(
+                logger.info(
                     f"PAGESIZE {page_count} detected in query. Only retrieving first page."
                 )
         else:
@@ -108,12 +117,14 @@ class QueryService:
         # First page - use query for the initial request
         response = self.query(query, describe_query=True)
 
-        if response["responseStatus"] == "FAILURE":
-            print(f"Error: {response}")
-            return None
+        if not response or response.get("responseStatus") == "FAILURE":
+            logger.error(f"Bulk query failed: {response}")
+            # Import here to avoid circular imports
+            from veevavault.exceptions import VaultQueryError
+            raise VaultQueryError(f"Bulk query failed: {response}")
 
         # Convert first page to DataFrame
-        output = pd.DataFrame(response["data"])
+        output = pd.DataFrame(response.get("data", []))
 
         # Handle pagination if needed
         try:
@@ -138,6 +149,6 @@ class QueryService:
                     )
         except Exception as e:
             # If pagination fails for any reason, return what we have
-            print(f"Warning: Pagination may be incomplete due to: {e}")
+            logger.warning(f"Pagination may be incomplete due to: {e}")
 
         return output
