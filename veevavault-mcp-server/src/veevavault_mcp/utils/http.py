@@ -4,13 +4,17 @@ HTTP client utilities for Veeva Vault API.
 
 from typing import Any, Optional
 import httpx
+import logging
 from tenacity import (
     retry,
     stop_after_attempt,
     wait_exponential,
+    wait_fixed,
     retry_if_exception_type,
+    before_sleep_log,
 )
 import structlog
+import time
 
 from .errors import (
     APIError,
@@ -66,9 +70,10 @@ class VaultHTTPClient:
             self._client = None
 
     @retry(
-        stop=stop_after_attempt(3),
-        wait=wait_exponential(multiplier=1, min=2, max=10),
-        retry=retry_if_exception_type((httpx.TimeoutException, httpx.ConnectError)),
+        stop=stop_after_attempt(5),
+        wait=wait_exponential(multiplier=1, min=2, max=60),
+        retry=retry_if_exception_type((httpx.TimeoutException, httpx.ConnectError, RateLimitError)),
+        before_sleep=before_sleep_log(logger, logging.INFO),
         reraise=True,
     )
     async def request(
@@ -79,6 +84,7 @@ class VaultHTTPClient:
         json: Optional[dict[str, Any]] = None,
         params: Optional[dict[str, Any]] = None,
         data: Optional[dict[str, Any]] = None,
+        files: Optional[dict[str, Any]] = None,
     ) -> dict[str, Any]:
         """
         Make HTTP request to Vault API with retry logic.
@@ -90,6 +96,7 @@ class VaultHTTPClient:
             json: Optional JSON body
             params: Optional query parameters
             data: Optional form data
+            files: Optional files for multipart upload
 
         Returns:
             Parsed JSON response
@@ -111,6 +118,7 @@ class VaultHTTPClient:
             path=path,
             has_json=json is not None,
             has_data=data is not None,
+            has_files=files is not None,
         )
 
         try:
@@ -121,6 +129,7 @@ class VaultHTTPClient:
                 json=json,
                 params=params,
                 data=data,
+                files=files,
             )
 
             # Log response
@@ -130,11 +139,18 @@ class VaultHTTPClient:
                 path=path,
             )
 
-            # Handle rate limiting
+            # Handle rate limiting with exponential backoff
             if response.status_code == 429:
-                retry_after = int(response.headers.get("Retry-After", 60))
+                retry_after = int(response.headers.get("Retry-After", 5))
+                self.logger.warning(
+                    "rate_limit_exceeded",
+                    path=path,
+                    retry_after=retry_after,
+                )
+                # Sleep before raising so retry logic can handle it
+                time.sleep(min(retry_after, 60))  # Cap at 60 seconds
                 raise RateLimitError(
-                    message="API rate limit exceeded",
+                    message=f"API rate limit exceeded. Retry after {retry_after} seconds.",
                     retry_after=retry_after,
                     context={"path": path, "method": method},
                 )

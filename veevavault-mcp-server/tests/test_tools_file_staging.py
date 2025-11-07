@@ -35,27 +35,71 @@ class TestFileStagingUploadTool:
     """Tests for FileStagingUploadTool."""
 
     @pytest.mark.asyncio
-    async def test_upload_file_not_implemented(self, mock_auth_manager, mock_http_client):
-        """Test that file upload returns not implemented status."""
-        tool = FileStagingUploadTool(mock_auth_manager, mock_http_client)
-        result = await tool.execute(file_path="/path/to/file.pdf", file_name="file.pdf")
+    async def test_upload_file_success(self, mock_auth_manager, mock_http_client, tmp_path):
+        """Test successful file upload to staging."""
+        # Create a temporary test file
+        test_file = tmp_path / "test.pdf"
+        test_file.write_bytes(b"PDF content here")
 
-        # File upload is not yet implemented, should return success=False
-        assert not result.success
-        assert "not yet implemented" in result.error.lower()
-        assert result.data["status"] == "not_implemented"
-        assert "endpoint" in result.data
-        assert result.data["file_name"] == "file.pdf"
+        mock_http_client.post = AsyncMock(
+            return_value={
+                "responseStatus": "SUCCESS",
+                "data": {"path": "u123456/test.pdf"},
+            }
+        )
+
+        tool = FileStagingUploadTool(mock_auth_manager, mock_http_client)
+        result = await tool.execute(file_path=str(test_file), file_name="test.pdf")
+
+        assert result.success
+        assert result.data["staging_path"] == "u123456/test.pdf"
+        assert result.data["file_name"] == "test.pdf"
+        assert result.data["file_size_bytes"] == 16
+        assert "uploaded successfully" in result.data["message"].lower()
+
+        # Verify correct endpoint and files parameter
+        call_args = mock_http_client.post.call_args
+        assert "/services/file_staging" in call_args.kwargs["path"]
+        assert "files" in call_args.kwargs
 
     @pytest.mark.asyncio
-    async def test_upload_file_default_name(self, mock_auth_manager, mock_http_client):
+    async def test_upload_file_default_name(self, mock_auth_manager, mock_http_client, tmp_path):
         """Test file upload with default file name extracts basename."""
-        tool = FileStagingUploadTool(mock_auth_manager, mock_http_client)
-        result = await tool.execute(file_path="/path/to/document.pdf")
+        # Create a temporary test file
+        test_file = tmp_path / "document.pdf"
+        test_file.write_bytes(b"PDF content")
 
-        # Even though not implemented, should extract filename correctly
-        assert not result.success
+        mock_http_client.post = AsyncMock(
+            return_value={
+                "responseStatus": "SUCCESS",
+                "data": {"path": "u123456/document.pdf"},
+            }
+        )
+
+        tool = FileStagingUploadTool(mock_auth_manager, mock_http_client)
+        result = await tool.execute(file_path=str(test_file))
+
+        assert result.success
         assert result.data["file_name"] == "document.pdf"
+        assert result.data["staging_path"] == "u123456/document.pdf"
+
+    @pytest.mark.asyncio
+    async def test_upload_file_not_found(self, mock_auth_manager, mock_http_client):
+        """Test file upload with non-existent file."""
+        tool = FileStagingUploadTool(mock_auth_manager, mock_http_client)
+        result = await tool.execute(file_path="/nonexistent/file.pdf")
+
+        assert not result.success
+        assert "not found" in result.error.lower()
+
+    @pytest.mark.asyncio
+    async def test_upload_file_is_directory(self, mock_auth_manager, mock_http_client, tmp_path):
+        """Test file upload when path is a directory."""
+        tool = FileStagingUploadTool(mock_auth_manager, mock_http_client)
+        result = await tool.execute(file_path=str(tmp_path))
+
+        assert not result.success
+        assert "not a file" in result.error.lower()
 
 
 class TestFileStagingListTool:

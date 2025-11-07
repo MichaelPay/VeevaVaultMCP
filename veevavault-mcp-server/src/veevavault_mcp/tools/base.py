@@ -201,16 +201,85 @@ class BaseTool(ABC):
         Raises:
             ValidationError: If validation fails
         """
-        # Basic validation - subclasses can override for more complex validation
         schema = self.get_parameters_schema()
+        properties = schema.get("properties", {})
         required = schema.get("required", [])
 
+        # Check required parameters
         for param in required:
             if param not in params or params[param] is None:
                 raise ValidationError(
                     message=f"Missing required parameter: {param}",
                     context={"parameter": param, "tool": self.name},
                 )
+
+        # Validate each provided parameter
+        for param_name, param_value in params.items():
+            if param_name not in properties:
+                continue  # Allow extra params for flexibility
+
+            param_schema = properties[param_name]
+            param_type = param_schema.get("type")
+
+            # Skip None values for optional parameters
+            if param_value is None:
+                continue
+
+            # Type validation
+            if param_type == "integer":
+                if not isinstance(param_value, int) or isinstance(param_value, bool):
+                    raise ValidationError(
+                        message=f"Parameter '{param_name}' must be an integer, got {type(param_value).__name__}",
+                        context={"parameter": param_name, "value": param_value},
+                    )
+
+                # Range validation
+                if "minimum" in param_schema and param_value < param_schema["minimum"]:
+                    raise ValidationError(
+                        message=f"Parameter '{param_name}' must be >= {param_schema['minimum']}, got {param_value}",
+                        context={"parameter": param_name, "value": param_value},
+                    )
+
+                if "maximum" in param_schema and param_value > param_schema["maximum"]:
+                    raise ValidationError(
+                        message=f"Parameter '{param_name}' must be <= {param_schema['maximum']}, got {param_value}",
+                        context={"parameter": param_name, "value": param_value},
+                    )
+
+            elif param_type == "string":
+                if not isinstance(param_value, str):
+                    raise ValidationError(
+                        message=f"Parameter '{param_name}' must be a string, got {type(param_value).__name__}",
+                        context={"parameter": param_name, "value": param_value},
+                    )
+
+                # Minimum length validation
+                if "minLength" in param_schema and len(param_value) < param_schema["minLength"]:
+                    raise ValidationError(
+                        message=f"Parameter '{param_name}' must be at least {param_schema['minLength']} characters",
+                        context={"parameter": param_name},
+                    )
+
+                # Enum validation
+                if "enum" in param_schema and param_value not in param_schema["enum"]:
+                    raise ValidationError(
+                        message=f"Parameter '{param_name}' must be one of {param_schema['enum']}, got '{param_value}'",
+                        context={"parameter": param_name, "value": param_value},
+                    )
+
+            elif param_type == "boolean":
+                if not isinstance(param_value, bool):
+                    raise ValidationError(
+                        message=f"Parameter '{param_name}' must be a boolean, got {type(param_value).__name__}",
+                        context={"parameter": param_name, "value": param_value},
+                    )
+
+            elif param_type == "array":
+                if not isinstance(param_value, list):
+                    raise ValidationError(
+                        message=f"Parameter '{param_name}' must be an array, got {type(param_value).__name__}",
+                        context={"parameter": param_name},
+                    )
 
     def _sanitize_params(self, params: dict) -> dict:
         """

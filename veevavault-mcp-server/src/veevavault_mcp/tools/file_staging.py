@@ -20,18 +20,16 @@ class FileStagingUploadTool(BaseTool):
     def description(self) -> str:
         return """Upload a file to Vault's staging area.
 
-⚠️  IMPLEMENTATION STATUS: This tool is currently a placeholder and does not perform
-actual file uploads. It returns endpoint information for future implementation.
-
 Required for large file operations (>50MB, recommended for >10MB).
 Returns staging path that can be used in document create/update operations.
 
 Use cases:
-- Large document uploads (when implemented)
-- Batch document creation with files (when implemented)
-- Resumable upload prerequisites (when implemented)
+- Large document uploads
+- Batch document creation with files
+- Resumable upload prerequisites
 
-Technical note: Requires multipart/form-data file handling implementation."""
+The file is uploaded via multipart/form-data and returns a staging path like
+'u123456/filename.pdf' that can be referenced in document operations."""
 
     def get_parameters_schema(self) -> dict:
         return {
@@ -56,43 +54,103 @@ Technical note: Requires multipart/form-data file handling implementation."""
         try:
             import os
 
-            headers = await self._get_auth_headers()
-            path = self._build_api_path("/services/file_staging")
+            # Validate file exists
+            if not os.path.exists(file_path):
+                return ToolResult(
+                    success=False,
+                    error=f"File not found: {file_path}",
+                    metadata={"operation": "file_staging_upload"},
+                )
+
+            # Validate file is readable
+            if not os.path.isfile(file_path):
+                return ToolResult(
+                    success=False,
+                    error=f"Path is not a file: {file_path}",
+                    metadata={"operation": "file_staging_upload"},
+                )
 
             # Determine file name
             if not file_name:
                 file_name = os.path.basename(file_path)
 
-            # For now, return instructions since actual file upload requires multipart
-            # This would need actual file reading and multipart encoding
+            # Get file size for logging
+            file_size = os.path.getsize(file_path)
+
             self.logger.info(
-                "file_staging_upload_requested",
+                "file_staging_upload_started",
                 file_path=file_path,
                 file_name=file_name,
+                file_size_bytes=file_size,
+            )
+
+            headers = await self._get_auth_headers()
+            path = self._build_api_path("/services/file_staging")
+
+            # Read and upload file using multipart/form-data
+            with open(file_path, "rb") as f:
+                files = {"file": (file_name, f, "application/octet-stream")}
+
+                response = await self.http_client.post(
+                    path=path,
+                    headers=headers,
+                    files=files,
+                )
+
+            # Extract staging path from response
+            # Vault returns: {"responseStatus": "SUCCESS", "data": {"path": "u123456/filename.pdf"}}
+            staging_path = response.get("data", {}).get("path", "")
+
+            self.logger.info(
+                "file_staging_upload_completed",
+                file_name=file_name,
+                staging_path=staging_path,
+                file_size_bytes=file_size,
             )
 
             return ToolResult(
-                success=False,
-                error="File upload not yet implemented. This tool is a placeholder requiring multipart/form-data file handling.",
+                success=True,
                 data={
-                    "status": "not_implemented",
-                    "endpoint": path,
+                    "staging_path": staging_path,
                     "file_name": file_name,
-                    "file_path": file_path,
-                    "implementation_needed": "multipart/form-data encoding with actual file content",
+                    "file_size_bytes": file_size,
+                    "message": f"File uploaded successfully to {staging_path}",
                 },
                 metadata={
                     "operation": "file_staging_upload",
-                    "file_name": file_name,
-                    "status": "not_implemented",
+                    "staging_path": staging_path,
+                    "file_size_bytes": file_size,
                 },
             )
 
+        except FileNotFoundError:
+            return ToolResult(
+                success=False,
+                error=f"File not found: {file_path}",
+                metadata={"operation": "file_staging_upload"},
+            )
+        except PermissionError:
+            return ToolResult(
+                success=False,
+                error=f"Permission denied reading file: {file_path}",
+                metadata={"operation": "file_staging_upload"},
+            )
         except APIError as e:
             return ToolResult(
                 success=False,
                 error=f"Failed to upload file to staging: {e.message}",
-                metadata={"error_code": e.error_code},
+                metadata={"error_code": e.error_code, "operation": "file_staging_upload"},
+            )
+        except Exception as e:
+            self.logger.error(
+                "file_staging_upload_error",
+                error=str(e),
+                file_path=file_path,
+            )
+            return ToolResult(
+                success=False,
+                error=f"Unexpected error uploading file: {str(e)}",
+                metadata={"operation": "file_staging_upload"},
             )
 
 
