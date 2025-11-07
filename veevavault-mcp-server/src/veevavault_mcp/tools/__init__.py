@@ -33,6 +33,31 @@ from .audit import (
     GetUserActivityTool,
 )
 
+# Document tools
+from .documents import (
+    DocumentsQueryTool,
+    DocumentsGetTool,
+    DocumentsCreateTool,
+    DocumentsUpdateTool,
+    DocumentsDeleteTool,
+    DocumentsLockTool,
+    DocumentsUnlockTool,
+)
+
+# Object tools
+from .objects import (
+    ObjectsQueryTool,
+    ObjectsGetTool,
+    ObjectsCreateTool,
+    ObjectsUpdateTool,
+)
+
+# VQL tools
+from .vql import (
+    VQLExecuteTool,
+    VQLValidateTool,
+)
+
 __all__ = [
     # Base
     "BaseTool",
@@ -56,4 +81,20 @@ __all__ = [
     "QueryAuditTrailTool",
     "GetDocumentAuditTool",
     "GetUserActivityTool",
+    # Documents
+    "DocumentsQueryTool",
+    "DocumentsGetTool",
+    "DocumentsCreateTool",
+    "DocumentsUpdateTool",
+    "DocumentsDeleteTool",
+    "DocumentsLockTool",
+    "DocumentsUnlockTool",
+    # Objects
+    "ObjectsQueryTool",
+    "ObjectsGetTool",
+    "ObjectsCreateTool",
+    "ObjectsUpdateTool",
+    # VQL
+    "VQLExecuteTool",
+    "VQLValidateTool",
 ]
