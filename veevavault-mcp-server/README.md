@@ -4,13 +4,19 @@ Model Context Protocol (MCP) server for Veeva Vault API integration. Enables LLM
 
 ## Overview
 
-This MCP server provides resource-oriented tools for interacting with Veeva Vault v25.2 API:
-- **Documents**: Query, create, update, lifecycle management
-- **Objects**: CRUD operations on custom Vault objects
-- **VQL**: Execute Vault Query Language queries
-- **Workflows**: Manage approval workflows and tasks
-- **Binders**: Create and organize document binders
-- **Users & Groups**: User provisioning and access management
+This MCP server provides 58 resource-oriented tools for interacting with Veeva Vault v25.2 API:
+
+- **Documents** (20 tools): Query, CRUD, versioning, locking, file operations, batch operations, workflow actions, attachments, and renditions
+- **Objects** (8 tools): CRUD operations on custom Vault objects, batch operations, workflow actions
+- **Workflows** (3 tools): List workflows, get workflow details, manage document workflow states
+- **Tasks** (3 tools): List tasks, get task details, execute task actions (complete, reassign, cancel)
+- **VQL** (2 tools): Execute and validate Vault Query Language queries
+- **Users** (4 tools): List, get, create, and update users
+- **Groups** (5 tools): Manage groups and group memberships
+- **Metadata** (3 tools): Retrieve object schemas, field definitions, and picklist values
+- **Audit Trail** (3 tools): Query audit logs, document audit history, user activity
+- **File Staging** (4 tools): Manage file staging area for large file uploads
+- **Administrative Tools** (3 tools): System configuration and compliance reporting
 
 ## Features
 
@@ -266,38 +272,54 @@ docker run -d \
 
 See `docs/kubernetes/` for deployment manifests.
 
-## Roadmap
+## Implementation Status
 
-### Phase 1 (Week 1-5) - Foundation
-- ✅ Configuration and authentication
-- ✅ Error handling and logging
-- ✅ Caching and metrics
-- 🚧 Core tools: Documents, Objects, VQL (30 tools)
+### ✅ Completed
+- **Phase 1 - Foundation**: Configuration, authentication, error handling, logging, caching, metrics
+- **Phase 2 - Core Tools** (58 tools total):
+  - ✅ Document management (20 tools): CRUD, versioning, locking, batch operations, attachments, renditions
+  - ✅ Object management (8 tools): CRUD, batch operations, workflow actions
+  - ✅ VQL queries (2 tools): Execute and validate queries
+  - ✅ Workflows and tasks (6 tools): Workflow management, task execution
+  - ✅ File staging (4 tools): Large file upload/download management
+- **Phase 3 - Administration** (15 tools):
+  - ✅ User management (4 tools)
+  - ✅ Group management (5 tools)
+  - ✅ Metadata configuration (3 tools)
+  - ✅ Audit trail and compliance (3 tools)
+- **Phase 4 - Quality**:
+  - ✅ Comprehensive testing: 145 tests, 67% coverage
+  - ✅ Documentation: README, configuration examples, tool descriptions
+  - ✅ Error handling: Structured logging with JSON output
+  - ✅ Performance: Caching (memory/Valkey), batch operations, pagination support
 
-### Phase 2 (Week 6-8) - Workflows
-- Workflow and task management tools
-- Binder creation and organization
-- Signature and approval tools
+### 🚧 In Progress
+- Enhanced file upload: Multipart/form-data file handling for FileStagingUploadTool
+- Additional documentation: Tools reference, Getting started guide, Troubleshooting guide
 
-### Phase 3 (Week 9-10) - Administration
-- User and group management
-- Metadata configuration
-- Audit trail and compliance reporting
-
-### Phase 4 (Week 11-12) - Polish
-- Comprehensive testing (80%+ coverage)
-- Performance optimization
-- Documentation and examples
+### 📋 Planned Future Enhancements
+- Binder creation and organization tools
+- Electronic signature tools
+- Advanced reporting and analytics
+- Integration with external systems (CTMS, eTMF)
 
 ## License
 
 MIT License - see LICENSE file for details
 
+## Documentation
+
+- **[Getting Started Guide](GETTING_STARTED.md)** - Step-by-step tutorial for first-time users
+- **[Tools Reference](TOOLS_REFERENCE.md)** - Complete documentation for all 58 tools
+- **[Troubleshooting Guide](TROUBLESHOOTING.md)** - Common issues and solutions
+- **[Configuration](#configuration)** - Environment configuration reference (see above)
+- **[Veeva Vault API Docs](https://developer.veevavault.com/api/)** - Official API reference
+
 ## Support
 
-- GitHub Issues: https://github.com/yourusername/VeevaVaultMCP/issues
-- Documentation: https://github.com/yourusername/VeevaVaultMCP/tree/main/docs
-- Veeva Vault API Docs: https://developer.veevavault.com/api/
+- **GitHub Issues**: https://github.com/yourusername/VeevaVaultMCP/issues
+- **Documentation**: See links above
+- **Veeva Developer Portal**: https://developer.veevavault.com
 
 ## Contributing
 
