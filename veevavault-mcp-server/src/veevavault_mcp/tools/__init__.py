@@ -50,6 +50,14 @@ from .documents import (
     DocumentsExecuteActionTool,
     DocumentsUploadFileTool,
     DocumentsCreateVersionTool,
+    DocumentsAttachmentsListTool,
+    DocumentsAttachmentsUploadTool,
+    DocumentsAttachmentsDownloadTool,
+    DocumentsAttachmentsDeleteTool,
+    DocumentsRenditionsListTool,
+    DocumentsRenditionsGenerateTool,
+    DocumentsRenditionsDownloadTool,
+    DocumentsRenditionsDeleteTool,
 )
 
 # Object tools
@@ -76,6 +84,20 @@ from .file_staging import (
     FileStagingListTool,
     FileStagingDownloadTool,
     FileStagingDeleteTool,
+)
+
+# Workflow tools
+from .workflows import (
+    WorkflowsListTool,
+    WorkflowsGetTool,
+    DocumentsGetWorkflowDetailsTool,
+)
+
+# Task tools
+from .tasks import (
+    TasksListTool,
+    TasksGetTool,
+    TasksExecuteActionTool,
 )
 
 __all__ = [
@@ -117,6 +139,14 @@ __all__ = [
     "DocumentsExecuteActionTool",
     "DocumentsUploadFileTool",
     "DocumentsCreateVersionTool",
+    "DocumentsAttachmentsListTool",
+    "DocumentsAttachmentsUploadTool",
+    "DocumentsAttachmentsDownloadTool",
+    "DocumentsAttachmentsDeleteTool",
+    "DocumentsRenditionsListTool",
+    "DocumentsRenditionsGenerateTool",
+    "DocumentsRenditionsDownloadTool",
+    "DocumentsRenditionsDeleteTool",
     # Objects
     "ObjectsQueryTool",
     "ObjectsGetTool",
@@ -134,4 +164,12 @@ __all__ = [
     "FileStagingListTool",
     "FileStagingDownloadTool",
     "FileStagingDeleteTool",
+    # Workflows
+    "WorkflowsListTool",
+    "WorkflowsGetTool",
+    "DocumentsGetWorkflowDetailsTool",
+    # Tasks
+    "TasksListTool",
+    "TasksGetTool",
+    "TasksExecuteActionTool",
 ]
