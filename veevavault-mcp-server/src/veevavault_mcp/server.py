@@ -56,6 +56,14 @@ from .tools.documents import (
     DocumentsExecuteActionTool,
     DocumentsUploadFileTool,
     DocumentsCreateVersionTool,
+    DocumentsAttachmentsListTool,
+    DocumentsAttachmentsUploadTool,
+    DocumentsAttachmentsDownloadTool,
+    DocumentsAttachmentsDeleteTool,
+    DocumentsRenditionsListTool,
+    DocumentsRenditionsGenerateTool,
+    DocumentsRenditionsDownloadTool,
+    DocumentsRenditionsDeleteTool,
 )
 from .tools.objects import (
     ObjectsQueryTool,
@@ -76,6 +84,16 @@ from .tools.file_staging import (
     FileStagingListTool,
     FileStagingDownloadTool,
     FileStagingDeleteTool,
+)
+from .tools.workflows import (
+    WorkflowsListTool,
+    WorkflowsGetTool,
+    DocumentsGetWorkflowDetailsTool,
+)
+from .tools.tasks import (
+    TasksListTool,
+    TasksGetTool,
+    TasksExecuteActionTool,
 )
 
 logger = structlog.get_logger(__name__)
@@ -190,6 +208,14 @@ class VeevaVaultMCPServer:
         self._register_tool(DocumentsExecuteActionTool)
         self._register_tool(DocumentsUploadFileTool)
         self._register_tool(DocumentsCreateVersionTool)
+        self._register_tool(DocumentsAttachmentsListTool)
+        self._register_tool(DocumentsAttachmentsUploadTool)
+        self._register_tool(DocumentsAttachmentsDownloadTool)
+        self._register_tool(DocumentsAttachmentsDeleteTool)
+        self._register_tool(DocumentsRenditionsListTool)
+        self._register_tool(DocumentsRenditionsGenerateTool)
+        self._register_tool(DocumentsRenditionsDownloadTool)
+        self._register_tool(DocumentsRenditionsDeleteTool)
 
         # Object tools
         self._register_tool(ObjectsQueryTool)
@@ -210,6 +236,16 @@ class VeevaVaultMCPServer:
         self._register_tool(FileStagingListTool)
         self._register_tool(FileStagingDownloadTool)
         self._register_tool(FileStagingDeleteTool)
+
+        # Workflow tools
+        self._register_tool(WorkflowsListTool)
+        self._register_tool(WorkflowsGetTool)
+        self._register_tool(DocumentsGetWorkflowDetailsTool)
+
+        # Task tools
+        self._register_tool(TasksListTool)
+        self._register_tool(TasksGetTool)
+        self._register_tool(TasksExecuteActionTool)
 
         self.logger.info("tools_registered", count=len(self.tools))
 

@@ -655,3 +655,247 @@ class TestDocumentsCreateVersionTool:
         call_args = mock_http_client.post.call_args
         assert call_args.kwargs["json"]["status__v"] == "draft"
         assert call_args.kwargs["json"]["reason__c"] == "Updated content"
+
+
+class TestDocumentsAttachmentsListTool:
+    """Tests for DocumentsAttachmentsListTool."""
+
+    @pytest.mark.asyncio
+    async def test_list_attachments_success(self, mock_auth_manager, mock_http_client):
+        """Test listing document attachments."""
+        from veevavault_mcp.tools.documents import DocumentsAttachmentsListTool
+        
+        mock_http_client.get = AsyncMock(
+            return_value={
+                "responseStatus": "SUCCESS",
+                "data": [
+                    {"id": "A001", "file_name__v": "data.xlsx", "size__v": 1024},
+                    {"id": "A002", "file_name__v": "notes.pdf", "size__v": 2048},
+                ],
+            }
+        )
+
+        tool = DocumentsAttachmentsListTool(mock_auth_manager, mock_http_client)
+        result = await tool.execute(document_id=123)
+
+        assert result.success
+        assert result.data["document_id"] == 123
+        assert result.data["count"] == 2
+
+        # Verify correct endpoint
+        call_args = mock_http_client.get.call_args
+        assert "/objects/documents/123/attachments" in call_args.kwargs["path"]
+
+
+class TestDocumentsAttachmentsUploadTool:
+    """Tests for DocumentsAttachmentsUploadTool."""
+
+    @pytest.mark.asyncio
+    async def test_upload_attachment_success(self, mock_auth_manager, mock_http_client):
+        """Test uploading document attachment."""
+        from veevavault_mcp.tools.documents import DocumentsAttachmentsUploadTool
+        
+        mock_http_client.post = AsyncMock(
+            return_value={
+                "responseStatus": "SUCCESS",
+                "id": "A003",
+            }
+        )
+
+        tool = DocumentsAttachmentsUploadTool(mock_auth_manager, mock_http_client)
+        result = await tool.execute(
+            document_id=123,
+            staging_path="u456/data.xlsx",
+            description="Supporting data",
+        )
+
+        assert result.success
+        assert result.data["attachment_id"] == "A003"
+
+        # Verify correct data was sent
+        call_args = mock_http_client.post.call_args
+        assert call_args.kwargs["json"]["file"] == "u456/data.xlsx"
+        assert call_args.kwargs["json"]["description__v"] == "Supporting data"
+
+
+class TestDocumentsAttachmentsDownloadTool:
+    """Tests for DocumentsAttachmentsDownloadTool."""
+
+    @pytest.mark.asyncio
+    async def test_download_attachment_success(self, mock_auth_manager, mock_http_client):
+        """Test downloading document attachment."""
+        from veevavault_mcp.tools.documents import DocumentsAttachmentsDownloadTool
+        
+        mock_http_client.get = AsyncMock(
+            return_value={
+                "responseStatus": "SUCCESS",
+                "file": "data.xlsx",
+            }
+        )
+
+        tool = DocumentsAttachmentsDownloadTool(mock_auth_manager, mock_http_client)
+        result = await tool.execute(document_id=123, attachment_id="A001")
+
+        assert result.success
+        assert result.data["attachment_id"] == "A001"
+        assert "download_url" in result.data
+
+        # Verify correct endpoint
+        call_args = mock_http_client.get.call_args
+        assert "/objects/documents/123/attachments/A001" in call_args.kwargs["path"]
+
+
+class TestDocumentsAttachmentsDeleteTool:
+    """Tests for DocumentsAttachmentsDeleteTool."""
+
+    @pytest.mark.asyncio
+    async def test_delete_attachment_success(self, mock_auth_manager, mock_http_client):
+        """Test deleting document attachment."""
+        from veevavault_mcp.tools.documents import DocumentsAttachmentsDeleteTool
+        
+        mock_http_client.delete = AsyncMock(
+            return_value={
+                "responseStatus": "SUCCESS",
+            }
+        )
+
+        tool = DocumentsAttachmentsDeleteTool(mock_auth_manager, mock_http_client)
+        result = await tool.execute(document_id=123, attachment_id="A001")
+
+        assert result.success
+        assert "deleted" in result.data["message"].lower()
+
+        # Verify correct endpoint and method
+        call_args = mock_http_client.delete.call_args
+        assert "/objects/documents/123/attachments/A001" in call_args.kwargs["path"]
+
+
+class TestDocumentsRenditionsListTool:
+    """Tests for DocumentsRenditionsListTool."""
+
+    @pytest.mark.asyncio
+    async def test_list_renditions_success(self, mock_auth_manager, mock_http_client):
+        """Test listing document renditions."""
+        from veevavault_mcp.tools.documents import DocumentsRenditionsListTool
+        
+        mock_http_client.get = AsyncMock(
+            return_value={
+                "responseStatus": "SUCCESS",
+                "renditions": [
+                    {"type": "pdf", "status": "ready"},
+                    {"type": "thumbnail", "status": "ready"},
+                ],
+            }
+        )
+
+        tool = DocumentsRenditionsListTool(mock_auth_manager, mock_http_client)
+        result = await tool.execute(document_id=123)
+
+        assert result.success
+        assert result.data["document_id"] == 123
+        assert result.data["count"] == 2
+
+        # Verify correct endpoint
+        call_args = mock_http_client.get.call_args
+        assert "/objects/documents/123/renditions" in call_args.kwargs["path"]
+
+    @pytest.mark.asyncio
+    async def test_list_renditions_for_version(self, mock_auth_manager, mock_http_client):
+        """Test listing renditions for specific version."""
+        from veevavault_mcp.tools.documents import DocumentsRenditionsListTool
+        
+        mock_http_client.get = AsyncMock(
+            return_value={
+                "responseStatus": "SUCCESS",
+                "renditions": [],
+            }
+        )
+
+        tool = DocumentsRenditionsListTool(mock_auth_manager, mock_http_client)
+        result = await tool.execute(document_id=123, doc_version="1.0")
+
+        assert result.success
+        assert result.data["doc_version"] == "1.0"
+
+        # Verify version in path
+        call_args = mock_http_client.get.call_args
+        assert "/versions/1.0/renditions" in call_args.kwargs["path"]
+
+
+class TestDocumentsRenditionsGenerateTool:
+    """Tests for DocumentsRenditionsGenerateTool."""
+
+    @pytest.mark.asyncio
+    async def test_generate_rendition_success(self, mock_auth_manager, mock_http_client):
+        """Test generating document rendition."""
+        from veevavault_mcp.tools.documents import DocumentsRenditionsGenerateTool
+        
+        mock_http_client.post = AsyncMock(
+            return_value={
+                "responseStatus": "SUCCESS",
+                "job_id": "JOB123",
+            }
+        )
+
+        tool = DocumentsRenditionsGenerateTool(mock_auth_manager, mock_http_client)
+        result = await tool.execute(document_id=123, rendition_type="pdf")
+
+        assert result.success
+        assert result.data["rendition_type"] == "pdf"
+        assert result.data["job_id"] == "JOB123"
+
+        # Verify correct endpoint
+        call_args = mock_http_client.post.call_args
+        assert "/objects/documents/123/renditions/pdf" in call_args.kwargs["path"]
+
+
+class TestDocumentsRenditionsDownloadTool:
+    """Tests for DocumentsRenditionsDownloadTool."""
+
+    @pytest.mark.asyncio
+    async def test_download_rendition_success(self, mock_auth_manager, mock_http_client):
+        """Test downloading document rendition."""
+        from veevavault_mcp.tools.documents import DocumentsRenditionsDownloadTool
+        
+        mock_http_client.get = AsyncMock(
+            return_value={
+                "responseStatus": "SUCCESS",
+                "file": "document.pdf",
+            }
+        )
+
+        tool = DocumentsRenditionsDownloadTool(mock_auth_manager, mock_http_client)
+        result = await tool.execute(document_id=123, rendition_type="pdf")
+
+        assert result.success
+        assert result.data["rendition_type"] == "pdf"
+        assert "download_url" in result.data
+
+        # Verify correct endpoint
+        call_args = mock_http_client.get.call_args
+        assert "/objects/documents/123/renditions/pdf/file" in call_args.kwargs["path"]
+
+
+class TestDocumentsRenditionsDeleteTool:
+    """Tests for DocumentsRenditionsDeleteTool."""
+
+    @pytest.mark.asyncio
+    async def test_delete_rendition_success(self, mock_auth_manager, mock_http_client):
+        """Test deleting document rendition."""
+        from veevavault_mcp.tools.documents import DocumentsRenditionsDeleteTool
+        
+        mock_http_client.delete = AsyncMock(
+            return_value={
+                "responseStatus": "SUCCESS",
+            }
+        )
+
+        tool = DocumentsRenditionsDeleteTool(mock_auth_manager, mock_http_client)
+        result = await tool.execute(document_id=123, rendition_type="pdf")
+
+        assert result.success
+        assert "deleted" in result.data["message"].lower()
+
+        # Verify correct endpoint and method
+        call_args = mock_http_client.delete.call_args
+        assert "/objects/documents/123/renditions/pdf" in call_args.kwargs["path"]

@@ -1487,3 +1487,702 @@ Workflow:
                 error=f"Failed to create document version: {e.message}",
                 metadata={"error_code": e.error_code, "document_id": document_id},
             )
+
+
+class DocumentsAttachmentsListTool(BaseTool):
+    """List attachments for a document."""
+
+    @property
+    def name(self) -> str:
+        return "vault_documents_attachments_list"
+
+    @property
+    def description(self) -> str:
+        return """List all attachments for a document.
+
+Attachments are supporting files associated with a document:
+- Supplementary data files
+- Supporting documentation
+- Related images/diagrams
+- Reference materials
+
+Returns attachment metadata including file names, sizes, and IDs."""
+
+    def get_parameters_schema(self) -> dict:
+        return {
+            "type": "object",
+            "properties": {
+                "document_id": {
+                    "type": "integer",
+                    "description": "The document ID",
+                },
+            },
+            "required": ["document_id"],
+        }
+
+    async def execute(self, document_id: int) -> ToolResult:
+        """List document attachments."""
+        try:
+            headers = await self._get_auth_headers()
+            path = self._build_api_path(f"/objects/documents/{document_id}/attachments")
+
+            response = await self.http_client.get(
+                path=path,
+                headers=headers,
+            )
+
+            attachments = response.get("data", [])
+
+            self.logger.info(
+                "document_attachments_listed",
+                document_id=document_id,
+                attachment_count=len(attachments),
+            )
+
+            return ToolResult(
+                success=True,
+                data={
+                    "document_id": document_id,
+                    "attachments": attachments,
+                    "count": len(attachments),
+                },
+                metadata={
+                    "document_id": document_id,
+                    "attachment_count": len(attachments),
+                },
+            )
+
+        except APIError as e:
+            return ToolResult(
+                success=False,
+                error=f"Failed to list attachments for document {document_id}: {e.message}",
+                metadata={"error_code": e.error_code, "document_id": document_id},
+            )
+
+
+class DocumentsAttachmentsUploadTool(BaseTool):
+    """Upload an attachment to a document."""
+
+    @property
+    def name(self) -> str:
+        return "vault_documents_attachments_upload"
+
+    @property
+    def description(self) -> str:
+        return """Upload an attachment file to a document.
+
+Attachments are supporting files that complement the main document.
+
+For large files (>50MB):
+1. Upload to file staging first
+2. Provide staging_path parameter
+
+For smaller files:
+- Provide file_path parameter (local file)
+
+Returns attachment ID and metadata."""
+
+    def get_parameters_schema(self) -> dict:
+        return {
+            "type": "object",
+            "properties": {
+                "document_id": {
+                    "type": "integer",
+                    "description": "The document ID",
+                },
+                "staging_path": {
+                    "type": "string",
+                    "description": "Path to file in staging area (for large files)",
+                },
+                "description": {
+                    "type": "string",
+                    "description": "Attachment description (optional)",
+                },
+            },
+            "required": ["document_id"],
+        }
+
+    async def execute(
+        self,
+        document_id: int,
+        staging_path: Optional[str] = None,
+        description: Optional[str] = None,
+    ) -> ToolResult:
+        """Upload document attachment."""
+        try:
+            headers = await self._get_auth_headers()
+            path = self._build_api_path(f"/objects/documents/{document_id}/attachments")
+
+            # Build attachment data
+            attachment_data = {}
+            if staging_path:
+                attachment_data["file"] = staging_path
+            if description:
+                attachment_data["description__v"] = description
+
+            response = await self.http_client.post(
+                path=path,
+                headers=headers,
+                json=attachment_data if attachment_data else {},
+            )
+
+            attachment_id = response.get("id")
+
+            self.logger.info(
+                "document_attachment_uploaded",
+                document_id=document_id,
+                attachment_id=attachment_id,
+            )
+
+            return ToolResult(
+                success=True,
+                data={
+                    "document_id": document_id,
+                    "attachment_id": attachment_id,
+                    "response": response,
+                },
+                metadata={
+                    "document_id": document_id,
+                    "attachment_id": attachment_id,
+                    "operation": "upload_attachment",
+                },
+            )
+
+        except APIError as e:
+            return ToolResult(
+                success=False,
+                error=f"Failed to upload attachment to document {document_id}: {e.message}",
+                metadata={"error_code": e.error_code, "document_id": document_id},
+            )
+
+
+class DocumentsAttachmentsDownloadTool(BaseTool):
+    """Download an attachment from a document."""
+
+    @property
+    def name(self) -> str:
+        return "vault_documents_attachments_download"
+
+    @property
+    def description(self) -> str:
+        return """Download a specific attachment from a document.
+
+Returns download URL and file metadata.
+
+Use this to retrieve supporting files associated with documents."""
+
+    def get_parameters_schema(self) -> dict:
+        return {
+            "type": "object",
+            "properties": {
+                "document_id": {
+                    "type": "integer",
+                    "description": "The document ID",
+                },
+                "attachment_id": {
+                    "type": "string",
+                    "description": "The attachment ID",
+                },
+            },
+            "required": ["document_id", "attachment_id"],
+        }
+
+    async def execute(self, document_id: int, attachment_id: str) -> ToolResult:
+        """Download document attachment."""
+        try:
+            headers = await self._get_auth_headers()
+            path = self._build_api_path(
+                f"/objects/documents/{document_id}/attachments/{attachment_id}"
+            )
+
+            response = await self.http_client.get(
+                path=path,
+                headers=headers,
+            )
+
+            self.logger.info(
+                "document_attachment_downloaded",
+                document_id=document_id,
+                attachment_id=attachment_id,
+            )
+
+            return ToolResult(
+                success=True,
+                data={
+                    "document_id": document_id,
+                    "attachment_id": attachment_id,
+                    "download_url": path,
+                    "response": response,
+                },
+                metadata={
+                    "document_id": document_id,
+                    "attachment_id": attachment_id,
+                    "operation": "download_attachment",
+                },
+            )
+
+        except APIError as e:
+            return ToolResult(
+                success=False,
+                error=f"Failed to download attachment {attachment_id} from document {document_id}: {e.message}",
+                metadata={
+                    "error_code": e.error_code,
+                    "document_id": document_id,
+                    "attachment_id": attachment_id,
+                },
+            )
+
+
+class DocumentsAttachmentsDeleteTool(BaseTool):
+    """Delete an attachment from a document."""
+
+    @property
+    def name(self) -> str:
+        return "vault_documents_attachments_delete"
+
+    @property
+    def description(self) -> str:
+        return """Delete a specific attachment from a document.
+
+Use this to remove outdated or incorrect supporting files.
+
+Note: This operation cannot be undone."""
+
+    def get_parameters_schema(self) -> dict:
+        return {
+            "type": "object",
+            "properties": {
+                "document_id": {
+                    "type": "integer",
+                    "description": "The document ID",
+                },
+                "attachment_id": {
+                    "type": "string",
+                    "description": "The attachment ID to delete",
+                },
+            },
+            "required": ["document_id", "attachment_id"],
+        }
+
+    async def execute(self, document_id: int, attachment_id: str) -> ToolResult:
+        """Delete document attachment."""
+        try:
+            headers = await self._get_auth_headers()
+            path = self._build_api_path(
+                f"/objects/documents/{document_id}/attachments/{attachment_id}"
+            )
+
+            response = await self.http_client.delete(
+                path=path,
+                headers=headers,
+            )
+
+            self.logger.info(
+                "document_attachment_deleted",
+                document_id=document_id,
+                attachment_id=attachment_id,
+            )
+
+            return ToolResult(
+                success=True,
+                data={
+                    "document_id": document_id,
+                    "attachment_id": attachment_id,
+                    "message": "Attachment deleted successfully",
+                    "response": response,
+                },
+                metadata={
+                    "document_id": document_id,
+                    "attachment_id": attachment_id,
+                    "operation": "delete_attachment",
+                },
+            )
+
+        except APIError as e:
+            return ToolResult(
+                success=False,
+                error=f"Failed to delete attachment {attachment_id} from document {document_id}: {e.message}",
+                metadata={
+                    "error_code": e.error_code,
+                    "document_id": document_id,
+                    "attachment_id": attachment_id,
+                },
+            )
+
+
+class DocumentsRenditionsListTool(BaseTool):
+    """List renditions (alternative formats) for a document."""
+
+    @property
+    def name(self) -> str:
+        return "vault_documents_renditions_list"
+
+    @property
+    def description(self) -> str:
+        return """List all renditions for a document.
+
+Renditions are alternative formats of a document:
+- PDF versions of Word documents
+- Viewable formats for proprietary files
+- Print-ready versions
+- Thumbnail images
+
+Returns rendition types, statuses, and availability."""
+
+    def get_parameters_schema(self) -> dict:
+        return {
+            "type": "object",
+            "properties": {
+                "document_id": {
+                    "type": "integer",
+                    "description": "The document ID",
+                },
+                "doc_version": {
+                    "type": "string",
+                    "description": "Specific document version (e.g., '1.0') - optional",
+                },
+            },
+            "required": ["document_id"],
+        }
+
+    async def execute(
+        self, document_id: int, doc_version: Optional[str] = None
+    ) -> ToolResult:
+        """List document renditions."""
+        try:
+            headers = await self._get_auth_headers()
+            
+            if doc_version:
+                path = self._build_api_path(
+                    f"/objects/documents/{document_id}/versions/{doc_version}/renditions"
+                )
+            else:
+                path = self._build_api_path(f"/objects/documents/{document_id}/renditions")
+
+            response = await self.http_client.get(
+                path=path,
+                headers=headers,
+            )
+
+            renditions = response.get("renditions", [])
+
+            self.logger.info(
+                "document_renditions_listed",
+                document_id=document_id,
+                rendition_count=len(renditions),
+            )
+
+            return ToolResult(
+                success=True,
+                data={
+                    "document_id": document_id,
+                    "doc_version": doc_version,
+                    "renditions": renditions,
+                    "count": len(renditions),
+                },
+                metadata={
+                    "document_id": document_id,
+                    "rendition_count": len(renditions),
+                },
+            )
+
+        except APIError as e:
+            return ToolResult(
+                success=False,
+                error=f"Failed to list renditions for document {document_id}: {e.message}",
+                metadata={"error_code": e.error_code, "document_id": document_id},
+            )
+
+
+class DocumentsRenditionsGenerateTool(BaseTool):
+    """Generate a rendition for a document."""
+
+    @property
+    def name(self) -> str:
+        return "vault_documents_renditions_generate"
+
+    @property
+    def description(self) -> str:
+        return """Generate a specific rendition type for a document.
+
+Common rendition types:
+- pdf - PDF version
+- thumbnail - Thumbnail image
+- viewable - Web-viewable format
+
+Rendition generation is asynchronous. Check status before downloading.
+
+Returns generation job ID and status."""
+
+    def get_parameters_schema(self) -> dict:
+        return {
+            "type": "object",
+            "properties": {
+                "document_id": {
+                    "type": "integer",
+                    "description": "The document ID",
+                },
+                "rendition_type": {
+                    "type": "string",
+                    "description": "Rendition type to generate: 'pdf', 'thumbnail', 'viewable'",
+                },
+                "doc_version": {
+                    "type": "string",
+                    "description": "Specific document version (optional)",
+                },
+            },
+            "required": ["document_id", "rendition_type"],
+        }
+
+    async def execute(
+        self,
+        document_id: int,
+        rendition_type: str,
+        doc_version: Optional[str] = None,
+    ) -> ToolResult:
+        """Generate document rendition."""
+        try:
+            headers = await self._get_auth_headers()
+            
+            if doc_version:
+                path = self._build_api_path(
+                    f"/objects/documents/{document_id}/versions/{doc_version}/renditions/{rendition_type}"
+                )
+            else:
+                path = self._build_api_path(
+                    f"/objects/documents/{document_id}/renditions/{rendition_type}"
+                )
+
+            response = await self.http_client.post(
+                path=path,
+                headers=headers,
+                json={},
+            )
+
+            self.logger.info(
+                "document_rendition_generated",
+                document_id=document_id,
+                rendition_type=rendition_type,
+            )
+
+            return ToolResult(
+                success=True,
+                data={
+                    "document_id": document_id,
+                    "rendition_type": rendition_type,
+                    "doc_version": doc_version,
+                    "job_id": response.get("job_id"),
+                    "status": response.get("responseStatus"),
+                    "response": response,
+                },
+                metadata={
+                    "document_id": document_id,
+                    "rendition_type": rendition_type,
+                    "operation": "generate_rendition",
+                },
+            )
+
+        except APIError as e:
+            return ToolResult(
+                success=False,
+                error=f"Failed to generate {rendition_type} rendition for document {document_id}: {e.message}",
+                metadata={
+                    "error_code": e.error_code,
+                    "document_id": document_id,
+                    "rendition_type": rendition_type,
+                },
+            )
+
+
+class DocumentsRenditionsDownloadTool(BaseTool):
+    """Download a specific rendition of a document."""
+
+    @property
+    def name(self) -> str:
+        return "vault_documents_renditions_download"
+
+    @property
+    def description(self) -> str:
+        return """Download a specific rendition file.
+
+Use after checking rendition availability with list_renditions.
+
+Returns download URL and file metadata.
+
+Common uses:
+- Download PDF version of Word doc
+- Get thumbnail for preview
+- Access viewable format for web display"""
+
+    def get_parameters_schema(self) -> dict:
+        return {
+            "type": "object",
+            "properties": {
+                "document_id": {
+                    "type": "integer",
+                    "description": "The document ID",
+                },
+                "rendition_type": {
+                    "type": "string",
+                    "description": "Rendition type: 'pdf', 'thumbnail', 'viewable'",
+                },
+                "doc_version": {
+                    "type": "string",
+                    "description": "Specific document version (optional)",
+                },
+            },
+            "required": ["document_id", "rendition_type"],
+        }
+
+    async def execute(
+        self,
+        document_id: int,
+        rendition_type: str,
+        doc_version: Optional[str] = None,
+    ) -> ToolResult:
+        """Download document rendition."""
+        try:
+            headers = await self._get_auth_headers()
+            
+            if doc_version:
+                path = self._build_api_path(
+                    f"/objects/documents/{document_id}/versions/{doc_version}/renditions/{rendition_type}/file"
+                )
+            else:
+                path = self._build_api_path(
+                    f"/objects/documents/{document_id}/renditions/{rendition_type}/file"
+                )
+
+            response = await self.http_client.get(
+                path=path,
+                headers=headers,
+            )
+
+            self.logger.info(
+                "document_rendition_downloaded",
+                document_id=document_id,
+                rendition_type=rendition_type,
+            )
+
+            return ToolResult(
+                success=True,
+                data={
+                    "document_id": document_id,
+                    "rendition_type": rendition_type,
+                    "doc_version": doc_version,
+                    "download_url": path,
+                    "response": response,
+                },
+                metadata={
+                    "document_id": document_id,
+                    "rendition_type": rendition_type,
+                    "operation": "download_rendition",
+                },
+            )
+
+        except APIError as e:
+            return ToolResult(
+                success=False,
+                error=f"Failed to download {rendition_type} rendition for document {document_id}: {e.message}",
+                metadata={
+                    "error_code": e.error_code,
+                    "document_id": document_id,
+                    "rendition_type": rendition_type,
+                },
+            )
+
+
+class DocumentsRenditionsDeleteTool(BaseTool):
+    """Delete a rendition from a document."""
+
+    @property
+    def name(self) -> str:
+        return "vault_documents_renditions_delete"
+
+    @property
+    def description(self) -> str:
+        return """Delete a specific rendition.
+
+Use cases:
+- Remove outdated renditions
+- Force regeneration of corrupted renditions
+- Clean up storage space
+
+Note: Renditions can be regenerated if needed."""
+
+    def get_parameters_schema(self) -> dict:
+        return {
+            "type": "object",
+            "properties": {
+                "document_id": {
+                    "type": "integer",
+                    "description": "The document ID",
+                },
+                "rendition_type": {
+                    "type": "string",
+                    "description": "Rendition type to delete: 'pdf', 'thumbnail', 'viewable'",
+                },
+                "doc_version": {
+                    "type": "string",
+                    "description": "Specific document version (optional)",
+                },
+            },
+            "required": ["document_id", "rendition_type"],
+        }
+
+    async def execute(
+        self,
+        document_id: int,
+        rendition_type: str,
+        doc_version: Optional[str] = None,
+    ) -> ToolResult:
+        """Delete document rendition."""
+        try:
+            headers = await self._get_auth_headers()
+            
+            if doc_version:
+                path = self._build_api_path(
+                    f"/objects/documents/{document_id}/versions/{doc_version}/renditions/{rendition_type}"
+                )
+            else:
+                path = self._build_api_path(
+                    f"/objects/documents/{document_id}/renditions/{rendition_type}"
+                )
+
+            response = await self.http_client.delete(
+                path=path,
+                headers=headers,
+            )
+
+            self.logger.info(
+                "document_rendition_deleted",
+                document_id=document_id,
+                rendition_type=rendition_type,
+            )
+
+            return ToolResult(
+                success=True,
+                data={
+                    "document_id": document_id,
+                    "rendition_type": rendition_type,
+                    "doc_version": doc_version,
+                    "message": "Rendition deleted successfully",
+                    "response": response,
+                },
+                metadata={
+                    "document_id": document_id,
+                    "rendition_type": rendition_type,
+                    "operation": "delete_rendition",
+                },
+            )
+
+        except APIError as e:
+            return ToolResult(
+                success=False,
+                error=f"Failed to delete {rendition_type} rendition for document {document_id}: {e.message}",
+                metadata={
+                    "error_code": e.error_code,
+                    "document_id": document_id,
+                    "rendition_type": rendition_type,
+                },
+            )

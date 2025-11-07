@@ -20,13 +20,18 @@ class FileStagingUploadTool(BaseTool):
     def description(self) -> str:
         return """Upload a file to Vault's staging area.
 
-Required for large file operations (>50MB recommended for >10MB).
+⚠️  IMPLEMENTATION STATUS: This tool is currently a placeholder and does not perform
+actual file uploads. It returns endpoint information for future implementation.
+
+Required for large file operations (>50MB, recommended for >10MB).
 Returns staging path that can be used in document create/update operations.
 
 Use cases:
-- Large document uploads
-- Batch document creation with files
-- Resumable upload prerequisites"""
+- Large document uploads (when implemented)
+- Batch document creation with files (when implemented)
+- Resumable upload prerequisites (when implemented)
+
+Technical note: Requires multipart/form-data file handling implementation."""
 
     def get_parameters_schema(self) -> dict:
         return {
@@ -67,16 +72,19 @@ Use cases:
             )
 
             return ToolResult(
-                success=True,
+                success=False,
+                error="File upload not yet implemented. This tool is a placeholder requiring multipart/form-data file handling.",
                 data={
-                    "message": "File staging upload endpoint configured",
+                    "status": "not_implemented",
                     "endpoint": path,
                     "file_name": file_name,
-                    "note": "Actual file upload requires multipart/form-data encoding with file content",
+                    "file_path": file_path,
+                    "implementation_needed": "multipart/form-data encoding with actual file content",
                 },
                 metadata={
                     "operation": "file_staging_upload",
                     "file_name": file_name,
+                    "status": "not_implemented",
                 },
             )
 
