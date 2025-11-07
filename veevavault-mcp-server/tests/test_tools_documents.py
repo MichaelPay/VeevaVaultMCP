@@ -40,7 +40,7 @@ class TestDocumentsQueryTool:
     @pytest.mark.asyncio
     async def test_query_with_vql(self, mock_auth_manager, mock_http_client):
         """Test query with direct VQL."""
-        mock_http_client.get = AsyncMock(
+        mock_http_client.post = AsyncMock(
             return_value={
                 "responseStatus": "SUCCESS",
                 "data": [
@@ -48,6 +48,8 @@ class TestDocumentsQueryTool:
                     {"id": 2, "name__v": "Test Document 2"},
                 ],
                 "responseDetails": {"total": 2},
+                "total": 2,
+                "pagesize": 100,
             }
         )
 
@@ -57,16 +59,19 @@ class TestDocumentsQueryTool:
         assert result.success
         assert result.data["count"] == 2
         assert len(result.data["documents"]) == 2
+        assert result.data["total"] == 2
+        assert "pagination" in result.data
 
-        # Verify VQL was used directly
-        call_args = mock_http_client.get.call_args
-        assert "SELECT id, name__v FROM documents" in call_args.kwargs["params"]["q"]
+        # Verify POST was used with form data
+        call_args = mock_http_client.post.call_args
+        assert "SELECT id, name__v FROM documents" in call_args.kwargs["data"]["q"]
+        assert call_args.kwargs["headers"]["Content-Type"] == "application/x-www-form-urlencoded"
 
     @pytest.mark.asyncio
     async def test_query_with_filters(self, mock_auth_manager, mock_http_client):
         """Test query with filter-based parameters."""
-        mock_http_client.get = AsyncMock(
-            return_value={"data": [], "responseDetails": {}}
+        mock_http_client.post = AsyncMock(
+            return_value={"data": [], "responseDetails": {}, "total": 0, "pagesize": 50}
         )
 
         tool = DocumentsQueryTool(mock_auth_manager, mock_http_client)
@@ -79,9 +84,9 @@ class TestDocumentsQueryTool:
 
         assert result.success
 
-        # Verify query was built from filters
-        call_args = mock_http_client.get.call_args
-        query = call_args.kwargs["params"]["q"]
+        # Verify query was built from filters using POST
+        call_args = mock_http_client.post.call_args
+        query = call_args.kwargs["data"]["q"]
         assert "name__v CONTAINS" in query
         assert "type__v =" in query
         assert "status__v =" in query
@@ -90,8 +95,8 @@ class TestDocumentsQueryTool:
     @pytest.mark.asyncio
     async def test_query_empty_results(self, mock_auth_manager, mock_http_client):
         """Test query with no results."""
-        mock_http_client.get = AsyncMock(
-            return_value={"data": [], "responseDetails": {}}
+        mock_http_client.post = AsyncMock(
+            return_value={"data": [], "responseDetails": {}, "total": 0, "pagesize": 100}
         )
 
         tool = DocumentsQueryTool(mock_auth_manager, mock_http_client)
@@ -100,6 +105,7 @@ class TestDocumentsQueryTool:
         assert result.success
         assert result.data["count"] == 0
         assert result.data["documents"] == []
+        assert result.data["total"] == 0
 
 
 class TestDocumentsGetTool:
@@ -128,7 +134,7 @@ class TestDocumentsGetTool:
 
         # Verify correct API path
         call_args = mock_http_client.get.call_args
-        assert "/objects/documents/123" in call_args.kwargs["path"]
+        assert "/documents/123" in call_args.kwargs["path"]
 
     @pytest.mark.asyncio
     async def test_get_document_specific_version(self, mock_auth_manager, mock_http_client):
@@ -151,7 +157,7 @@ class TestDocumentsGetTool:
 
         # Verify version-specific path
         call_args = mock_http_client.get.call_args
-        assert "/objects/documents/123/versions/1/0" in call_args.kwargs["path"]
+        assert "/documents/123/versions/1/0" in call_args.kwargs["path"]
 
 
 class TestDocumentsCreateTool:
@@ -264,7 +270,7 @@ class TestDocumentsDeleteTool:
 
         # Verify correct API path
         call_args = mock_http_client.delete.call_args
-        assert "/objects/documents/123" in call_args.kwargs["path"]
+        assert "/documents/123" in call_args.kwargs["path"]
 
 
 class TestDocumentsLockTool:
@@ -285,7 +291,7 @@ class TestDocumentsLockTool:
 
         # Verify correct API path
         call_args = mock_http_client.post.call_args
-        assert "/objects/documents/123/lock" in call_args.kwargs["path"]
+        assert "/documents/123/lock" in call_args.kwargs["path"]
 
 
 class TestDocumentsUnlockTool:
@@ -306,4 +312,4 @@ class TestDocumentsUnlockTool:
 
         # Verify correct API path
         call_args = mock_http_client.delete.call_args
-        assert "/objects/documents/123/lock" in call_args.kwargs["path"]
+        assert "/documents/123/lock" in call_args.kwargs["path"]

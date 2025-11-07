@@ -42,11 +42,18 @@ Use specific tools (documents_query, objects_query) for simple queries."""
                     "minimum": 1,
                     "maximum": 10000,
                 },
+                "auto_paginate": {
+                    "type": "boolean",
+                    "description": "Automatically fetch all pages (default: false)",
+                    "default": False,
+                },
             },
             "required": ["query"],
         }
 
-    async def execute(self, query: str, limit: Optional[int] = None) -> ToolResult:
+    async def execute(
+        self, query: str, limit: Optional[int] = None, auto_paginate: bool = False
+    ) -> ToolResult:
         """Execute VQL query."""
         try:
             headers = await self._get_auth_headers()
@@ -62,24 +69,50 @@ Use specific tools (documents_query, objects_query) for simple queries."""
                 )
                 query_to_execute += f" LIMIT {limit}"
 
-            # Execute query
+            # Execute query using POST (required by Vault API)
             path = self._build_api_path("/query")
-            params = {"q": query_to_execute}
 
-            response = await self.http_client.get(
+            # Add Content-Type header for form-encoded data
+            query_headers = {
+                **headers,
+                "Content-Type": "application/x-www-form-urlencoded",
+            }
+
+            response = await self.http_client.post(
                 path=path,
-                headers=headers,
-                params=params,
+                headers=query_headers,
+                data={"q": query_to_execute},
             )
 
             # Extract results
             data = response.get("data", [])
             response_details = response.get("responseDetails", {})
 
+            # Parse pagination metadata
+            pagesize = response.get("pagesize", limit if limit else 100)
+            total = response.get("total", len(data))
+            next_page = response.get("next_page")
+
+            # Auto-paginate if requested
+            pages_fetched = 1
+            if auto_paginate and next_page:
+                while next_page:
+                    page_response = await self.http_client.post(
+                        path=next_page,
+                        headers=query_headers,
+                        data={},
+                    )
+                    page_data = page_response.get("data", [])
+                    data.extend(page_data)
+                    pages_fetched += 1
+                    next_page = page_response.get("next_page")
+
             self.logger.info(
                 "vql_executed",
                 query_length=len(query),
                 result_count=len(data),
+                total_available=total,
+                pages_fetched=pages_fetched,
             )
 
             return ToolResult(
@@ -87,12 +120,20 @@ Use specific tools (documents_query, objects_query) for simple queries."""
                 data={
                     "results": data,
                     "count": len(data),
+                    "total": total,
                     "query": query_to_execute,
                     "response_details": response_details,
+                    "pagination": {
+                        "pagesize": pagesize,
+                        "pages_fetched": pages_fetched,
+                        "total_available": total,
+                        "is_complete": auto_paginate or len(data) >= total,
+                    },
                 },
                 metadata={
                     "result_count": len(data),
                     "query_type": "vql",
+                    "auto_paginate": auto_paginate,
                 },
             )
 
@@ -150,13 +191,19 @@ Returns validation errors if syntax is incorrect."""
             )
             validation_query += " LIMIT 0"
 
+            # Execute validation query using POST (required by Vault API)
             path = self._build_api_path("/query")
-            params = {"q": validation_query}
 
-            response = await self.http_client.get(
+            # Add Content-Type header for form-encoded data
+            query_headers = {
+                **headers,
+                "Content-Type": "application/x-www-form-urlencoded",
+            }
+
+            response = await self.http_client.post(
                 path=path,
-                headers=headers,
-                params=params,
+                headers=query_headers,
+                data={"q": validation_query},
             )
 
             self.logger.info("vql_validated", query_length=len(query))

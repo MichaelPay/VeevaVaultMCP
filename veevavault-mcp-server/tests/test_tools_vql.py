@@ -36,7 +36,7 @@ class TestVQLExecuteTool:
     @pytest.mark.asyncio
     async def test_execute_vql_success(self, mock_auth_manager, mock_http_client):
         """Test successful VQL execution."""
-        mock_http_client.get = AsyncMock(
+        mock_http_client.post = AsyncMock(
             return_value={
                 "responseStatus": "SUCCESS",
                 "data": [
@@ -59,14 +59,14 @@ class TestVQLExecuteTool:
         assert result.data["query"] == "SELECT id, name__v FROM documents WHERE type__v = 'protocol__c'"
 
         # Verify API call
-        call_args = mock_http_client.get.call_args
+        call_args = mock_http_client.post.call_args
         assert "/query" in call_args.kwargs["path"]
-        assert call_args.kwargs["params"]["q"] == "SELECT id, name__v FROM documents WHERE type__v = 'protocol__c'"
+        assert call_args.kwargs["data"]["q"] == "SELECT id, name__v FROM documents WHERE type__v = 'protocol__c'"
 
     @pytest.mark.asyncio
     async def test_execute_vql_with_limit_override(self, mock_auth_manager, mock_http_client):
         """Test VQL execution with limit override."""
-        mock_http_client.get = AsyncMock(
+        mock_http_client.post = AsyncMock(
             return_value={"data": [], "responseDetails": {}}
         )
 
@@ -79,15 +79,15 @@ class TestVQLExecuteTool:
         assert result.success
 
         # Verify limit was overridden
-        call_args = mock_http_client.get.call_args
-        executed_query = call_args.kwargs["params"]["q"]
+        call_args = mock_http_client.post.call_args
+        executed_query = call_args.kwargs["data"]["q"]
         assert "LIMIT 50" in executed_query
         assert "LIMIT 100" not in executed_query
 
     @pytest.mark.asyncio
     async def test_execute_vql_empty_results(self, mock_auth_manager, mock_http_client):
         """Test VQL execution with no results."""
-        mock_http_client.get = AsyncMock(
+        mock_http_client.post = AsyncMock(
             return_value={"data": [], "responseDetails": {}}
         )
 
@@ -111,7 +111,7 @@ class TestVQLExecuteTool:
                 status_code=400
             )
 
-        mock_http_client.get = AsyncMock(side_effect=raise_api_error)
+        mock_http_client.post = AsyncMock(side_effect=raise_api_error)
 
         tool = VQLExecuteTool(mock_auth_manager, mock_http_client)
         result = await tool.execute(query="SELECT invalid syntax")
@@ -127,11 +127,13 @@ class TestVQLValidateTool:
     @pytest.mark.asyncio
     async def test_validate_vql_success(self, mock_auth_manager, mock_http_client):
         """Test successful VQL validation."""
-        mock_http_client.get = AsyncMock(
+        mock_http_client.post = AsyncMock(
             return_value={
                 "responseStatus": "SUCCESS",
                 "data": [],
                 "responseDetails": {},
+                "total": 3,
+                "pagesize": 100,
             }
         )
 
@@ -146,14 +148,14 @@ class TestVQLValidateTool:
         assert result.data["message"] == "Query syntax is valid"
 
         # Verify validation used LIMIT 0
-        call_args = mock_http_client.get.call_args
-        executed_query = call_args.kwargs["params"]["q"]
+        call_args = mock_http_client.post.call_args
+        executed_query = call_args.kwargs["data"]["q"]
         assert "LIMIT 0" in executed_query
 
     @pytest.mark.asyncio
     async def test_validate_vql_removes_existing_limit(self, mock_auth_manager, mock_http_client):
         """Test that validation removes existing LIMIT clause."""
-        mock_http_client.get = AsyncMock(
+        mock_http_client.post = AsyncMock(
             return_value={"responseStatus": "SUCCESS", "data": [], "responseDetails": {}}
         )
 
@@ -165,8 +167,8 @@ class TestVQLValidateTool:
         assert result.success
 
         # Verify original LIMIT was removed and replaced with LIMIT 0
-        call_args = mock_http_client.get.call_args
-        executed_query = call_args.kwargs["params"]["q"]
+        call_args = mock_http_client.post.call_args
+        executed_query = call_args.kwargs["data"]["q"]
         assert "LIMIT 0" in executed_query
         assert "LIMIT 100" not in executed_query
 
@@ -181,7 +183,7 @@ class TestVQLValidateTool:
                 status_code=400
             )
 
-        mock_http_client.get = AsyncMock(side_effect=raise_api_error)
+        mock_http_client.post = AsyncMock(side_effect=raise_api_error)
 
         tool = VQLValidateTool(mock_auth_manager, mock_http_client)
         result = await tool.execute(query="SELECT invalid_field FROM documents")

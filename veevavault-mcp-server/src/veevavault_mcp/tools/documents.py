@@ -52,10 +52,15 @@ Most commonly used tool for document discovery."""
                 },
                 "limit": {
                     "type": "integer",
-                    "description": "Maximum number of results (default: 100, max: 1000)",
+                    "description": "Maximum number of results per page (default: 100, max: 1000)",
                     "default": 100,
                     "minimum": 1,
                     "maximum": 1000,
+                },
+                "auto_paginate": {
+                    "type": "boolean",
+                    "description": "Automatically fetch all pages (default: false). WARNING: May return thousands of results.",
+                    "default": False,
                 },
             },
             "required": [],
@@ -69,6 +74,7 @@ Most commonly used tool for document discovery."""
         lifecycle_state: Optional[str] = None,
         status: Optional[str] = None,
         limit: int = 100,
+        auto_paginate: bool = False,
     ) -> ToolResult:
         """Execute document query."""
         try:
@@ -86,22 +92,67 @@ Most commonly used tool for document discovery."""
                     limit=limit,
                 )
 
-            # Execute query
+            # Execute query using POST (required by Vault API)
             path = self._build_api_path("/query")
-            params = {"q": query}
 
-            response = await self.http_client.get(
+            # Add Content-Type header for form-encoded data
+            query_headers = {
+                **headers,
+                "Content-Type": "application/x-www-form-urlencoded",
+            }
+
+            response = await self.http_client.post(
                 path=path,
-                headers=headers,
-                params=params,
+                headers=query_headers,
+                data={"q": query},
             )
 
+            # Collect all documents
             documents = response.get("data", [])
+
+            # Parse pagination metadata
+            pagesize = response.get("pagesize", limit)
+            total = response.get("total", len(documents))
+            next_page = response.get("next_page")
+
+            # Auto-paginate if requested
+            pages_fetched = 1
+            if auto_paginate and next_page:
+                self.logger.info(
+                    "auto_paginating",
+                    total_records=total,
+                    first_page_count=len(documents),
+                )
+
+                # Follow next_page URLs until no more pages
+                while next_page:
+                    # Extract the full URL from next_page
+                    page_response = await self.http_client.post(
+                        path=next_page,
+                        headers=query_headers,
+                        data={},  # Query already in URL
+                    )
+
+                    page_data = page_response.get("data", [])
+                    documents.extend(page_data)
+                    pages_fetched += 1
+
+                    # Get next page URL
+                    next_page = page_response.get("next_page")
+
+                    self.logger.debug(
+                        "page_fetched",
+                        page=pages_fetched,
+                        records=len(page_data),
+                        total_so_far=len(documents),
+                    )
 
             self.logger.info(
                 "documents_queried",
                 count=len(documents),
-                has_vql=vql is not None,
+                total_available=total,
+                pages_fetched=pages_fetched,
+                auto_paginate=auto_paginate,
             )
 
             return ToolResult(
@@ -109,9 +160,19 @@ Most commonly used tool for document discovery."""
                 data={
                     "documents": documents,
                     "count": len(documents),
+                    "total": total,
                     "query": query,
+                    "pagination": {
+                        "pagesize": pagesize,
+                        "pages_fetched": pages_fetched,
+                        "total_available": total,
+                        "is_complete": auto_paginate or len(documents) >= total,
+                    },
                 },
-                metadata={"query_type": "vql" if vql else "filters"},
+                metadata={
+                    "query_type": "vql" if vql else "filters",
+                    "auto_paginate": auto_paginate,
+                },
             )
 
         except APIError as e:
@@ -200,10 +261,10 @@ Use after documents_query to get full details."""
             # Build path with version if specified
             if major_version is not None and minor_version is not None:
                 path = self._build_api_path(
-                    f"/objects/documents/{document_id}/versions/{major_version}/{minor_version}"
+                    f"/documents/{document_id}/versions/{major_version}/{minor_version}"
                 )
             else:
-                path = self._build_api_path(f"/objects/documents/{document_id}")
+                path = self._build_api_path(f"/documents/{document_id}")
 
             response = await self.http_client.get(
                 path=path,
@@ -314,7 +375,7 @@ Returns the created document ID."""
         """Execute document creation."""
         try:
             headers = await self._get_auth_headers()
-            path = self._build_api_path("/objects/documents")
+            path = self._build_api_path("/documents")
 
             # Build document data
             doc_data = {
@@ -430,7 +491,7 @@ Note: Document must be in an editable state."""
         """Execute document update."""
         try:
             headers = await self._get_auth_headers()
-            path = self._build_api_path(f"/objects/documents/{document_id}")
+            path = self._build_api_path(f"/documents/{document_id}")
 
             # Build update data
             update_data = {}
@@ -517,7 +578,7 @@ Use with caution."""
         """Execute document deletion."""
         try:
             headers = await self._get_auth_headers()
-            path = self._build_api_path(f"/objects/documents/{document_id}")
+            path = self._build_api_path(f"/documents/{document_id}")
 
             response = await self.http_client.delete(
                 path=path,
@@ -573,7 +634,7 @@ Must unlock when done or document remains locked to you."""
         """Execute document lock."""
         try:
             headers = await self._get_auth_headers()
-            path = self._build_api_path(f"/objects/documents/{document_id}/lock")
+            path = self._build_api_path(f"/documents/{document_id}/lock")
 
             response = await self.http_client.post(
                 path=path,
@@ -626,7 +687,7 @@ Use after completing edits on a locked document."""
         """Execute document unlock."""
         try:
             headers = await self._get_auth_headers()
-            path = self._build_api_path(f"/objects/documents/{document_id}/lock")
+            path = self._build_api_path(f"/documents/{document_id}/lock")
 
             response = await self.http_client.delete(
                 path=path,

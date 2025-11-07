@@ -86,7 +86,7 @@ Returns detailed audit records including:
         """
         try:
             headers = await self._get_auth_headers()
-            path = self._build_api_path("/audittrail")
+            path = self._build_api_path("/audit")
 
             # Build query parameters
             params = {
@@ -202,10 +202,10 @@ Useful for compliance tracking and investigating document changes."""
             # Build path based on version
             if major_version is not None and minor_version is not None:
                 path = self._build_api_path(
-                    f"/objects/documents/{document_id}/versions/{major_version}/{minor_version}/audittrail"
+                    f"/documents/{document_id}/versions/{major_version}/{minor_version}/audit"
                 )
             else:
-                path = self._build_api_path(f"/objects/documents/{document_id}/audittrail")
+                path = self._build_api_path(f"/documents/{document_id}/audit")
 
             response = await self.http_client.get(
                 path=path,
@@ -312,7 +312,7 @@ Useful for:
         """
         try:
             headers = await self._get_auth_headers()
-            path = self._build_api_path("/audittrail")
+            path = self._build_api_path("/audit")
 
             params = {
                 "user_id": user_id,

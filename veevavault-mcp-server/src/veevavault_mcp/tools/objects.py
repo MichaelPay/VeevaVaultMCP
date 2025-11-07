@@ -53,8 +53,13 @@ Essential for working with Vault data."""
                 },
                 "limit": {
                     "type": "integer",
-                    "description": "Maximum results (default: 100)",
+                    "description": "Maximum results per page (default: 100)",
                     "default": 100,
+                },
+                "auto_paginate": {
+                    "type": "boolean",
+                    "description": "Automatically fetch all pages (default: false)",
+                    "default": False,
                 },
             },
             "required": ["object_name"],
@@ -67,6 +72,7 @@ Essential for working with Vault data."""
         fields: Optional[list[str]] = None,
         where: Optional[str] = None,
         limit: int = 100,
+        auto_paginate: bool = False,
     ) -> ToolResult:
         """Execute object query."""
         try:
@@ -80,22 +86,49 @@ Essential for working with Vault data."""
                 where_clause = f" WHERE {where}" if where else ""
                 query = f"SELECT {field_list} FROM {object_name}{where_clause} LIMIT {limit}"
 
-            # Execute query
+            # Execute query using POST (required by Vault API)
             path = self._build_api_path("/query")
-            params = {"q": query}
 
-            response = await self.http_client.get(
+            # Add Content-Type header for form-encoded data
+            query_headers = {
+                **headers,
+                "Content-Type": "application/x-www-form-urlencoded",
+            }
+
+            response = await self.http_client.post(
                 path=path,
-                headers=headers,
-                params=params,
+                headers=query_headers,
+                data={"q": query},
             )
 
+            # Collect all records
             records = response.get("data", [])
+
+            # Parse pagination metadata
+            pagesize = response.get("pagesize", limit)
+            total = response.get("total", len(records))
+            next_page = response.get("next_page")
+
+            # Auto-paginate if requested
+            pages_fetched = 1
+            if auto_paginate and next_page:
+                while next_page:
+                    page_response = await self.http_client.post(
+                        path=next_page,
+                        headers=query_headers,
+                        data={},
+                    )
+                    page_data = page_response.get("data", [])
+                    records.extend(page_data)
+                    pages_fetched += 1
+                    next_page = page_response.get("next_page")
 
             self.logger.info(
                 "objects_queried",
                 object_name=object_name,
                 count=len(records),
+                total_available=total,
+                pages_fetched=pages_fetched,
             )
 
             return ToolResult(
@@ -104,9 +137,19 @@ Essential for working with Vault data."""
                     "object_name": object_name,
                     "records": records,
                     "count": len(records),
+                    "total": total,
                     "query": query,
+                    "pagination": {
+                        "pagesize": pagesize,
+                        "pages_fetched": pages_fetched,
+                        "total_available": total,
+                        "is_complete": auto_paginate or len(records) >= total,
+                    },
                 },
-                metadata={"object_name": object_name},
+                metadata={
+                    "object_name": object_name,
+                    "auto_paginate": auto_paginate,
+                },
             )
 
         except APIError as e:
@@ -152,7 +195,7 @@ Use after objects_query to get full record details."""
         """Execute object record retrieval."""
         try:
             headers = await self._get_auth_headers()
-            path = self._build_api_path(f"/vobjects/{object_name}/{record_id}")
+            path = self._build_api_path(f"/objects/{object_name}/{record_id}")
 
             response = await self.http_client.get(
                 path=path,
@@ -226,7 +269,7 @@ Common objects:
         """Execute object record creation."""
         try:
             headers = await self._get_auth_headers()
-            path = self._build_api_path(f"/vobjects/{object_name}")
+            path = self._build_api_path(f"/objects/{object_name}")
 
             response = await self.http_client.post(
                 path=path,
@@ -305,7 +348,7 @@ Only specified fields will be updated."""
         """Execute object record update."""
         try:
             headers = await self._get_auth_headers()
-            path = self._build_api_path(f"/vobjects/{object_name}/{record_id}")
+            path = self._build_api_path(f"/objects/{object_name}/{record_id}")
 
             response = await self.http_client.put(
                 path=path,

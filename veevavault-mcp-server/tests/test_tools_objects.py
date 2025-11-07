@@ -37,7 +37,7 @@ class TestObjectsQueryTool:
     @pytest.mark.asyncio
     async def test_query_with_vql(self, mock_auth_manager, mock_http_client):
         """Test query with direct VQL."""
-        mock_http_client.get = AsyncMock(
+        mock_http_client.post = AsyncMock(
             return_value={
                 "responseStatus": "SUCCESS",
                 "data": [
@@ -59,14 +59,14 @@ class TestObjectsQueryTool:
         assert len(result.data["records"]) == 2
 
         # Verify VQL was used
-        call_args = mock_http_client.get.call_args
-        assert "SELECT id, name__v FROM product__v" in call_args.kwargs["params"]["q"]
+        call_args = mock_http_client.post.call_args
+        assert "SELECT id, name__v FROM product__v" in call_args.kwargs["data"]["q"]
 
     @pytest.mark.asyncio
     async def test_query_with_fields_and_where(self, mock_auth_manager, mock_http_client):
         """Test query built from fields and where clause."""
-        mock_http_client.get = AsyncMock(
-            return_value={"data": [], "responseDetails": {}}
+        mock_http_client.post = AsyncMock(
+            return_value={"data": [], "responseDetails": {}, "total": 0, "pagesize": 100}
         )
 
         tool = ObjectsQueryTool(mock_auth_manager, mock_http_client)
@@ -80,8 +80,8 @@ class TestObjectsQueryTool:
         assert result.success
 
         # Verify query was built correctly
-        call_args = mock_http_client.get.call_args
-        query = call_args.kwargs["params"]["q"]
+        call_args = mock_http_client.post.call_args
+        query = call_args.kwargs["data"]["q"]
         assert "SELECT id, name__v, status__v FROM product__v" in query
         assert "WHERE active__v = true" in query
         assert "LIMIT 50" in query
@@ -89,8 +89,8 @@ class TestObjectsQueryTool:
     @pytest.mark.asyncio
     async def test_query_simple_without_where(self, mock_auth_manager, mock_http_client):
         """Test simple query without where clause."""
-        mock_http_client.get = AsyncMock(
-            return_value={"data": [], "responseDetails": {}}
+        mock_http_client.post = AsyncMock(
+            return_value={"data": [], "responseDetails": {}, "total": 0, "pagesize": 100}
         )
 
         tool = ObjectsQueryTool(mock_auth_manager, mock_http_client)
@@ -99,8 +99,8 @@ class TestObjectsQueryTool:
         assert result.success
 
         # Verify default fields were used
-        call_args = mock_http_client.get.call_args
-        query = call_args.kwargs["params"]["q"]
+        call_args = mock_http_client.post.call_args
+        query = call_args.kwargs["data"]["q"]
         assert "SELECT id, name__v FROM study__v" in query
 
 
@@ -121,7 +121,7 @@ class TestObjectsGetTool:
         )
 
         tool = ObjectsGetTool(mock_auth_manager, mock_http_client)
-        result = await tool.execute(object_name="product__v", record_id=456)
+        result = await tool.execute(object_name="product__v", record_id="456")
 
         assert result.success
         assert result.data["id"] == 456
@@ -129,7 +129,7 @@ class TestObjectsGetTool:
 
         # Verify correct API path
         call_args = mock_http_client.get.call_args
-        assert "/vobjects/product__v/456" in call_args.kwargs["path"]
+        assert "/objects/product__v/456" in call_args.kwargs["path"]
 
     @pytest.mark.asyncio
     async def test_get_object_metadata(self, mock_auth_manager, mock_http_client):
@@ -179,7 +179,7 @@ class TestObjectsCreateTool:
 
         # Verify request payload
         call_args = mock_http_client.post.call_args
-        assert "/vobjects/product__v" in call_args.kwargs["path"]
+        assert "/objects/product__v" in call_args.kwargs["path"]
         payload = call_args.kwargs["json"]
         assert payload["name__v"] == "New Product"
         assert payload["status__v"] == "active__v"
@@ -223,7 +223,7 @@ class TestObjectsUpdateTool:
 
         # Verify request
         call_args = mock_http_client.put.call_args
-        assert "/vobjects/product__v/456" in call_args.kwargs["path"]
+        assert "/objects/product__v/456" in call_args.kwargs["path"]
         payload = call_args.kwargs["json"]
         assert payload["name__v"] == "Updated Product"
 
