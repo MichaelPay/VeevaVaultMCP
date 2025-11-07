@@ -44,7 +44,7 @@ Use specific tools (documents_query, objects_query) for simple queries."""
                 },
                 "auto_paginate": {
                     "type": "boolean",
-                    "description": "Automatically fetch all pages (default: false)",
+                    "description": "Automatically fetch all pages (default: false). WARNING: May return thousands of results.",
                     "default": False,
                 },
                 "describe_query": {

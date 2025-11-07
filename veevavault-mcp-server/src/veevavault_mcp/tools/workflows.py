@@ -110,7 +110,14 @@ Returns:
 - Role assignments
 - Workflow configuration
 
-Use this to understand workflow structure before triggering actions."""
+Use cases:
+- Understanding workflow structure before triggering actions
+- Discovering available lifecycle states
+- Mapping workflow paths for automation
+
+Example:
+Get details for document review workflow to see all possible states
+and transitions before initiating a document review process."""
 
     def get_parameters_schema(self) -> dict:
         return {
@@ -176,7 +183,15 @@ Returns:
 - Task assignments
 - Workflow history
 
-Essential for understanding what actions can be performed on a document."""
+Use cases:
+- Check if document can be approved/rejected
+- Discover next steps in workflow
+- Identify who can take action on document
+- Audit workflow progression
+
+Example:
+Before attempting to approve a document, check its workflow details
+to see if approval action is available and what data is required."""
 
     def get_parameters_schema(self) -> dict:
         return {

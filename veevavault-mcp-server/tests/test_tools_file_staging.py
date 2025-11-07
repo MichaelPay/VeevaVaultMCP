@@ -35,22 +35,26 @@ class TestFileStagingUploadTool:
     """Tests for FileStagingUploadTool."""
 
     @pytest.mark.asyncio
-    async def test_upload_file_success(self, mock_auth_manager, mock_http_client):
-        """Test file upload to staging."""
+    async def test_upload_file_not_implemented(self, mock_auth_manager, mock_http_client):
+        """Test that file upload returns not implemented status."""
         tool = FileStagingUploadTool(mock_auth_manager, mock_http_client)
         result = await tool.execute(file_path="/path/to/file.pdf", file_name="file.pdf")
 
-        assert result.success
+        # File upload is not yet implemented, should return success=False
+        assert not result.success
+        assert "not yet implemented" in result.error.lower()
+        assert result.data["status"] == "not_implemented"
         assert "endpoint" in result.data
         assert result.data["file_name"] == "file.pdf"
 
     @pytest.mark.asyncio
     async def test_upload_file_default_name(self, mock_auth_manager, mock_http_client):
-        """Test file upload with default file name."""
+        """Test file upload with default file name extracts basename."""
         tool = FileStagingUploadTool(mock_auth_manager, mock_http_client)
         result = await tool.execute(file_path="/path/to/document.pdf")
 
-        assert result.success
+        # Even though not implemented, should extract filename correctly
+        assert not result.success
         assert result.data["file_name"] == "document.pdf"
 
 

@@ -115,7 +115,15 @@ Returns:
 - Available actions
 - Task instructions
 
-Use this before completing a task to understand requirements."""
+Use cases:
+- Review task requirements before completion
+- Check task due dates for prioritization
+- Understand task context and related documents
+- Identify required fields for task completion
+
+Example:
+Get details for a document review task to see what verdict options
+are available (approve/reject) and what comments are required."""
 
     def get_parameters_schema(self) -> dict:
         return {
@@ -188,7 +196,13 @@ Completing tasks advances workflows and triggers next steps.
 Required data varies by action:
 - complete: May need verdict (approve/reject), comments
 - reassign: Requires new assignee user ID
-- delegate: Requires delegate user ID"""
+- delegate: Requires delegate user ID
+
+Examples:
+- Complete a review task with approval: action="complete", verdict="approved", comment="Looks good"
+- Reassign task to another user: action="reassign", assignee_id=12345
+- Cancel an outdated task: action="cancel", comment="No longer needed"
+"""
 
     def get_parameters_schema(self) -> dict:
         return {
