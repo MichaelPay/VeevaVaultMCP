@@ -54,6 +54,8 @@ from .tools.documents import (
     DocumentsBatchUpdateTool,
     DocumentsGetActionsTool,
     DocumentsExecuteActionTool,
+    DocumentsUploadFileTool,
+    DocumentsCreateVersionTool,
 )
 from .tools.objects import (
     ObjectsQueryTool,
@@ -68,6 +70,12 @@ from .tools.objects import (
 from .tools.vql import (
     VQLExecuteTool,
     VQLValidateTool,
+)
+from .tools.file_staging import (
+    FileStagingUploadTool,
+    FileStagingListTool,
+    FileStagingDownloadTool,
+    FileStagingDeleteTool,
 )
 
 logger = structlog.get_logger(__name__)
@@ -180,6 +188,8 @@ class VeevaVaultMCPServer:
         self._register_tool(DocumentsBatchUpdateTool)
         self._register_tool(DocumentsGetActionsTool)
         self._register_tool(DocumentsExecuteActionTool)
+        self._register_tool(DocumentsUploadFileTool)
+        self._register_tool(DocumentsCreateVersionTool)
 
         # Object tools
         self._register_tool(ObjectsQueryTool)
@@ -194,6 +204,12 @@ class VeevaVaultMCPServer:
         # VQL tools
         self._register_tool(VQLExecuteTool)
         self._register_tool(VQLValidateTool)
+
+        # File staging tools
+        self._register_tool(FileStagingUploadTool)
+        self._register_tool(FileStagingListTool)
+        self._register_tool(FileStagingDownloadTool)
+        self._register_tool(FileStagingDeleteTool)
 
         self.logger.info("tools_registered", count=len(self.tools))
 

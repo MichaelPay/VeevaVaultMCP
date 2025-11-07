@@ -202,3 +202,175 @@ class TimeoutError(VeevaVaultError):
             error_code=error_code or "TIMEOUT",
             context=context,
         )
+
+
+class QuerySyntaxError(VeevaVaultError):
+    """Raised when VQL query has syntax errors."""
+
+    def __init__(
+        self,
+        message: str = "Query syntax error",
+        error_code: Optional[str] = None,
+        context: Optional[dict[str, Any]] = None,
+    ):
+        super().__init__(
+            message=message,
+            error_code=error_code or "MALFORMED_URL",
+            context=context,
+        )
+
+
+class FieldNotFoundError(VeevaVaultError):
+    """Raised when referenced field does not exist."""
+
+    def __init__(
+        self,
+        message: str = "Field not found",
+        error_code: Optional[str] = None,
+        context: Optional[dict[str, Any]] = None,
+    ):
+        super().__init__(
+            message=message,
+            error_code=error_code or "ATTRIBUTE_NOT_SUPPORTED",
+            context=context,
+        )
+
+
+class StateError(VeevaVaultError):
+    """Raised when operation not allowed in current state."""
+
+    def __init__(
+        self,
+        message: str = "Operation not allowed in current state",
+        error_code: Optional[str] = None,
+        context: Optional[dict[str, Any]] = None,
+    ):
+        super().__init__(
+            message=message,
+            error_code=error_code or "OPERATION_NOT_ALLOWED",
+            context=context,
+        )
+
+
+class SessionExpiredError(VeevaVaultError):
+    """Raised when session has expired."""
+
+    def __init__(
+        self,
+        message: str = "Session expired",
+        error_code: Optional[str] = None,
+        context: Optional[dict[str, Any]] = None,
+    ):
+        super().__init__(
+            message=message,
+            error_code=error_code or "SESSION_EXPIRED",
+            context=context,
+        )
+
+
+class NetworkError(VeevaVaultError):
+    """Raised when network operation fails."""
+
+    def __init__(
+        self,
+        message: str = "Network operation failed",
+        error_code: Optional[str] = None,
+        context: Optional[dict[str, Any]] = None,
+    ):
+        super().__init__(
+            message=message,
+            error_code=error_code or "NETWORK_ERROR",
+            context=context,
+        )
+
+
+# Map Vault API error codes to specific exception classes
+ERROR_CODE_MAP = {
+    # Authentication errors
+    "INVALID_SESSION_ID": SessionExpiredError,
+    "NO_PERMISSION": AuthorizationError,
+    "INSUFFICIENT_ACCESS": AuthorizationError,
+    # Query errors
+    "MALFORMED_URL": QuerySyntaxError,
+    "INVALID_QUERY": QuerySyntaxError,
+    # Field errors
+    "ATTRIBUTE_NOT_SUPPORTED": FieldNotFoundError,
+    "INVALID_FIELD": FieldNotFoundError,
+    # State errors
+    "OPERATION_NOT_ALLOWED": StateError,
+    "INVALID_DOCUMENT_STATE": StateError,
+    "INVALID_OBJECT_STATE": StateError,
+    # Validation errors
+    "INVALID_DATA": ValidationError,
+    "PARAMETER_REQUIRED": ValidationError,
+    "METHOD_NOT_SUPPORTED": ValidationError,
+    # Rate limiting
+    "API_LIMIT_EXCEED": RateLimitError,
+    "RATE_LIMIT_EXCEEDED": RateLimitError,
+}
+
+
+def create_error_from_response(
+    response_data: dict[str, Any],
+    status_code: Optional[int] = None,
+    default_message: str = "API request failed",
+) -> VeevaVaultError:
+    """
+    Create appropriate exception from Vault API error response.
+
+    Args:
+        response_data: API response dictionary
+        status_code: HTTP status code
+        default_message: Default error message if none in response
+
+    Returns:
+        Appropriate VeevaVaultError subclass instance
+    """
+    # Extract error information
+    error_type = response_data.get("responseStatus")
+    error_message = response_data.get("responseMessage", default_message)
+    
+    # Get first error from errors array if present
+    errors = response_data.get("errors", [])
+    if errors and isinstance(errors, list) and len(errors) > 0:
+        first_error = errors[0]
+        error_type = first_error.get("type", error_type)
+        error_message = first_error.get("message", error_message)
+
+    # Map to specific exception class
+    exception_class = ERROR_CODE_MAP.get(error_type, APIError)
+
+    # Create context
+    context = {
+        "response_status": response_data.get("responseStatus"),
+        "status_code": status_code,
+    }
+    if errors:
+        context["errors"] = errors
+
+    # Handle rate limiting specially to extract retry_after
+    if exception_class == RateLimitError:
+        retry_after = response_data.get("retry_after")
+        return exception_class(
+            message=error_message,
+            error_code=error_type,
+            context=context,
+            retry_after=retry_after,
+        )
+
+    # Handle API errors specially to include response data
+    if exception_class == APIError:
+        return exception_class(
+            message=error_message,
+            error_code=error_type,
+            context=context,
+            status_code=status_code,
+            response_data=response_data,
+        )
+
+    # Create specific error type
+    return exception_class(
+        message=error_message,
+        error_code=error_type,
+        context=context,
+    )

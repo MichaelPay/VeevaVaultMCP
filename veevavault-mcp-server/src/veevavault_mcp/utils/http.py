@@ -12,7 +12,13 @@ from tenacity import (
 )
 import structlog
 
-from .errors import APIError, RateLimitError, TimeoutError
+from .errors import (
+    APIError,
+    RateLimitError,
+    TimeoutError,
+    NetworkError,
+    create_error_from_response,
+)
 
 logger = structlog.get_logger(__name__)
 
@@ -153,14 +159,10 @@ class VaultHTTPClient:
             if isinstance(response_data, dict):
                 response_status = response_data.get("responseStatus")
                 if response_status == "FAILURE":
-                    error_message = self._extract_error_message(response_data)
-                    error_type = response_data.get("errors", [{}])[0].get("type", "API_ERROR")
-                    raise APIError(
-                        message=error_message,
-                        error_code=error_type,
-                        status_code=response.status_code,
+                    # Use enhanced error mapping
+                    raise create_error_from_response(
                         response_data=response_data,
-                        context={"path": path, "method": method},
+                        status_code=response.status_code,
                     )
 
             return response_data
@@ -174,7 +176,7 @@ class VaultHTTPClient:
 
         except (httpx.ConnectError, httpx.NetworkError) as e:
             self.logger.error("http_network_error", path=path, error=str(e))
-            raise APIError(
+            raise NetworkError(
                 message=f"Network error: {str(e)}",
                 context={"path": path},
             )

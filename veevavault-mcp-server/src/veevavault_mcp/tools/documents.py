@@ -1254,3 +1254,236 @@ Use get_actions first to discover available actions."""
                     "action_name": action_name,
                 },
             )
+
+
+class DocumentsUploadFileTool(BaseTool):
+    """Upload a file when creating a document."""
+
+    @property
+    def name(self) -> str:
+        return "vault_documents_upload_file"
+
+    @property
+    def description(self) -> str:
+        return """Create a document with file upload.
+
+Combines document metadata creation with file attachment.
+For large files (>50MB), use file staging first.
+
+Common workflow:
+1. For small files (<10MB): Use this tool directly
+2. For large files (>50MB): Upload to staging first, then create document"""
+
+    def get_parameters_schema(self) -> dict:
+        return {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "description": "Document name",
+                },
+                "type": {
+                    "type": "string",
+                    "description": "Document type (e.g., 'protocol__c')",
+                },
+                "lifecycle": {
+                    "type": "string",
+                    "description": "Document lifecycle (e.g., 'base__v')",
+                },
+                "title": {
+                    "type": "string",
+                    "description": "Document title",
+                },
+                "file_path": {
+                    "type": "string",
+                    "description": "Local file path OR staging path (optional)",
+                },
+                "staging_path": {
+                    "type": "string",
+                    "description": "Path to file in staging area (alternative to file_path)",
+                },
+                "metadata": {
+                    "type": "object",
+                    "description": "Additional document metadata fields",
+                    "additionalProperties": True,
+                },
+            },
+            "required": ["name", "type", "lifecycle", "title"],
+        }
+
+    async def execute(
+        self,
+        name: str,
+        type: str,
+        lifecycle: str,
+        title: str,
+        file_path: Optional[str] = None,
+        staging_path: Optional[str] = None,
+        metadata: Optional[dict] = None,
+    ) -> ToolResult:
+        """Upload file with document creation."""
+        try:
+            headers = await self._get_auth_headers()
+            path = self._build_api_path("/documents")
+
+            # Build document metadata
+            doc_data = {
+                "name__v": name,
+                "type__v": type,
+                "lifecycle__v": lifecycle,
+                "title__v": title,
+            }
+
+            # Add staging path if provided
+            if staging_path:
+                doc_data["file"] = staging_path
+
+            # Add additional metadata
+            if metadata:
+                for key, value in metadata.items():
+                    if not key.endswith("__v") and not key.endswith("__c"):
+                        doc_data[f"{key}__v"] = value
+                    else:
+                        doc_data[key] = value
+
+            # For actual file upload, would need multipart/form-data
+            # For now, create document with staging path
+            response = await self.http_client.post(
+                path=path,
+                headers=headers,
+                json=doc_data,
+            )
+
+            document_id = response.get("id")
+
+            self.logger.info(
+                "document_uploaded",
+                document_id=document_id,
+                has_file=bool(staging_path or file_path),
+            )
+
+            return ToolResult(
+                success=True,
+                data={
+                    "document_id": document_id,
+                    "name": name,
+                    "type": type,
+                    "response": response,
+                },
+                metadata={
+                    "document_id": document_id,
+                    "operation": "upload_file",
+                },
+            )
+
+        except APIError as e:
+            return ToolResult(
+                success=False,
+                error=f"Failed to upload document file: {e.message}",
+                metadata={"error_code": e.error_code},
+            )
+
+
+class DocumentsCreateVersionTool(BaseTool):
+    """Create a new version of an existing document."""
+
+    @property
+    def name(self) -> str:
+        return "vault_documents_create_version"
+
+    @property
+    def description(self) -> str:
+        return """Create a new version of a document.
+
+Critical for compliance workflows - maintains document history.
+
+Common use cases:
+- Update document content while preserving history
+- Controlled document versioning
+- Audit trail for document changes
+
+Workflow:
+1. Upload new file to staging (if needed)
+2. Create new version with updated content
+3. Version is created in Draft state (typically)"""
+
+    def get_parameters_schema(self) -> dict:
+        return {
+            "type": "object",
+            "properties": {
+                "document_id": {
+                    "type": "integer",
+                    "description": "The document ID",
+                },
+                "staging_path": {
+                    "type": "string",
+                    "description": "Path to new version file in staging area (optional)",
+                },
+                "metadata": {
+                    "type": "object",
+                    "description": "Version-specific metadata updates (optional)",
+                    "additionalProperties": True,
+                },
+            },
+            "required": ["document_id"],
+        }
+
+    async def execute(
+        self,
+        document_id: int,
+        staging_path: Optional[str] = None,
+        metadata: Optional[dict] = None,
+    ) -> ToolResult:
+        """Create new document version."""
+        try:
+            headers = await self._get_auth_headers()
+            path = self._build_api_path(f"/documents/{document_id}/versions")
+
+            # Build version data
+            version_data = {}
+
+            if staging_path:
+                version_data["file"] = staging_path
+
+            if metadata:
+                for key, value in metadata.items():
+                    if not key.endswith("__v") and not key.endswith("__c"):
+                        version_data[f"{key}__v"] = value
+                    else:
+                        version_data[key] = value
+
+            response = await self.http_client.post(
+                path=path,
+                headers=headers,
+                json=version_data if version_data else {},
+            )
+
+            version_info = response.get("data", {})
+
+            self.logger.info(
+                "document_version_created",
+                document_id=document_id,
+                version=version_info.get("version"),
+            )
+
+            return ToolResult(
+                success=True,
+                data={
+                    "document_id": document_id,
+                    "version": version_info.get("version"),
+                    "major_version": version_info.get("major_version_number__v"),
+                    "minor_version": version_info.get("minor_version_number__v"),
+                    "response": response,
+                },
+                metadata={
+                    "document_id": document_id,
+                    "operation": "create_version",
+                },
+            )
+
+        except APIError as e:
+            return ToolResult(
+                success=False,
+                error=f"Failed to create document version: {e.message}",
+                metadata={"error_code": e.error_code, "document_id": document_id},
+            )

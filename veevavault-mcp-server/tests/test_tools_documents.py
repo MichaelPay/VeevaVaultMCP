@@ -527,3 +527,131 @@ class TestDocumentsExecuteActionTool:
         # Verify correct endpoint
         call_args = mock_http_client.post.call_args
         assert "/documents/123/actions/Approve" in call_args.kwargs["path"]
+
+
+class TestDocumentsUploadFileTool:
+    """Tests for DocumentsUploadFileTool."""
+
+    @pytest.mark.asyncio
+    async def test_upload_file_with_staging(self, mock_auth_manager, mock_http_client):
+        """Test document creation with staged file."""
+        from veevavault_mcp.tools.documents import DocumentsUploadFileTool
+        
+        mock_http_client.post = AsyncMock(
+            return_value={
+                "responseStatus": "SUCCESS",
+                "id": 123,
+            }
+        )
+
+        tool = DocumentsUploadFileTool(mock_auth_manager, mock_http_client)
+        result = await tool.execute(
+            name="Test Document",
+            type="protocol__c",
+            lifecycle="base__v",
+            title="Test Title",
+            staging_path="u123/test.pdf",
+        )
+
+        assert result.success
+        assert result.data["document_id"] == 123
+        assert result.data["name"] == "Test Document"
+
+        # Verify staging path was included
+        call_args = mock_http_client.post.call_args
+        assert call_args.kwargs["json"]["file"] == "u123/test.pdf"
+
+    @pytest.mark.asyncio
+    async def test_upload_file_with_metadata(self, mock_auth_manager, mock_http_client):
+        """Test document upload with additional metadata."""
+        from veevavault_mcp.tools.documents import DocumentsUploadFileTool
+        
+        mock_http_client.post = AsyncMock(
+            return_value={
+                "responseStatus": "SUCCESS",
+                "id": 456,
+            }
+        )
+
+        tool = DocumentsUploadFileTool(mock_auth_manager, mock_http_client)
+        result = await tool.execute(
+            name="Protocol",
+            type="protocol__c",
+            lifecycle="base__v",
+            title="Clinical Protocol",
+            staging_path="u123/protocol.pdf",
+            metadata={"study_id": "STUDY-001", "version": "1.0"},
+        )
+
+        assert result.success
+
+        # Verify metadata fields were included with __v suffix
+        call_args = mock_http_client.post.call_args
+        assert call_args.kwargs["json"]["study_id__v"] == "STUDY-001"
+        assert call_args.kwargs["json"]["version__v"] == "1.0"
+
+
+class TestDocumentsCreateVersionTool:
+    """Tests for DocumentsCreateVersionTool."""
+
+    @pytest.mark.asyncio
+    async def test_create_version_success(self, mock_auth_manager, mock_http_client):
+        """Test creating new document version."""
+        from veevavault_mcp.tools.documents import DocumentsCreateVersionTool
+        
+        mock_http_client.post = AsyncMock(
+            return_value={
+                "responseStatus": "SUCCESS",
+                "data": {
+                    "version": "2.0",
+                    "major_version_number__v": 2,
+                    "minor_version_number__v": 0,
+                },
+            }
+        )
+
+        tool = DocumentsCreateVersionTool(mock_auth_manager, mock_http_client)
+        result = await tool.execute(
+            document_id=123,
+            staging_path="u123/version2.pdf",
+        )
+
+        assert result.success
+        assert result.data["document_id"] == 123
+        assert result.data["version"] == "2.0"
+        assert result.data["major_version"] == 2
+        assert result.data["minor_version"] == 0
+
+        # Verify correct endpoint
+        call_args = mock_http_client.post.call_args
+        assert "/documents/123/versions" in call_args.kwargs["path"]
+        assert call_args.kwargs["json"]["file"] == "u123/version2.pdf"
+
+    @pytest.mark.asyncio
+    async def test_create_version_with_metadata(self, mock_auth_manager, mock_http_client):
+        """Test creating version with metadata updates."""
+        from veevavault_mcp.tools.documents import DocumentsCreateVersionTool
+        
+        mock_http_client.post = AsyncMock(
+            return_value={
+                "responseStatus": "SUCCESS",
+                "data": {
+                    "version": "1.1",
+                    "major_version_number__v": 1,
+                    "minor_version_number__v": 1,
+                },
+            }
+        )
+
+        tool = DocumentsCreateVersionTool(mock_auth_manager, mock_http_client)
+        result = await tool.execute(
+            document_id=456,
+            metadata={"status": "draft", "reason__c": "Updated content"},
+        )
+
+        assert result.success
+
+        # Verify metadata was included
+        call_args = mock_http_client.post.call_args
+        assert call_args.kwargs["json"]["status__v"] == "draft"
+        assert call_args.kwargs["json"]["reason__c"] == "Updated content"

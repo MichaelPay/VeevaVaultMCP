@@ -48,6 +48,8 @@ from .documents import (
     DocumentsBatchUpdateTool,
     DocumentsGetActionsTool,
     DocumentsExecuteActionTool,
+    DocumentsUploadFileTool,
+    DocumentsCreateVersionTool,
 )
 
 # Object tools
@@ -66,6 +68,14 @@ from .objects import (
 from .vql import (
     VQLExecuteTool,
     VQLValidateTool,
+)
+
+# File staging tools
+from .file_staging import (
+    FileStagingUploadTool,
+    FileStagingListTool,
+    FileStagingDownloadTool,
+    FileStagingDeleteTool,
 )
 
 __all__ = [
@@ -105,6 +115,8 @@ __all__ = [
     "DocumentsBatchUpdateTool",
     "DocumentsGetActionsTool",
     "DocumentsExecuteActionTool",
+    "DocumentsUploadFileTool",
+    "DocumentsCreateVersionTool",
     # Objects
     "ObjectsQueryTool",
     "ObjectsGetTool",
@@ -117,4 +129,9 @@ __all__ = [
     # VQL
     "VQLExecuteTool",
     "VQLValidateTool",
+    # File Staging
+    "FileStagingUploadTool",
+    "FileStagingListTool",
+    "FileStagingDownloadTool",
+    "FileStagingDeleteTool",
 ]

@@ -218,3 +218,53 @@ class UsernamePasswordAuthManager(AuthenticationManager):
             self._http_client = None
 
         self.logger.info("auth_manager_closed")
+
+    async def ensure_valid_session(self) -> VaultSession:
+        """
+        Ensure we have a valid session, refreshing if needed.
+
+        Automatically refreshes session if it's expired or expiring soon.
+
+        Returns:
+            Valid VaultSession
+
+        Raises:
+            AuthenticationError: If refresh fails
+        """
+        session = await self.get_session()
+        
+        # Check if session is expiring soon (within 5 minutes)
+        from datetime import datetime, timedelta
+        
+        if hasattr(session, 'expires_at') and session.expires_at:
+            time_until_expiry = session.expires_at - datetime.utcnow()
+            if time_until_expiry < timedelta(minutes=5):
+                self.logger.info(
+                    "session_expiring_soon",
+                    time_until_expiry_seconds=time_until_expiry.total_seconds(),
+                )
+                session = await self.refresh_session()
+        
+        return session
+
+    def is_session_expiring_soon(self, threshold_minutes: int = 5) -> bool:
+        """
+        Check if current session is expiring soon.
+
+        Args:
+            threshold_minutes: Warning threshold in minutes
+
+        Returns:
+            True if session expires within threshold
+        """
+        if self._current_session is None:
+            return True
+            
+        if not hasattr(self._current_session, 'expires_at') or not self._current_session.expires_at:
+            # No expiry information, assume it's fine
+            return False
+            
+        from datetime import datetime, timedelta
+        
+        time_until_expiry = self._current_session.expires_at - datetime.utcnow()
+        return time_until_expiry < timedelta(minutes=threshold_minutes)
