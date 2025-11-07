@@ -47,12 +47,33 @@ Use specific tools (documents_query, objects_query) for simple queries."""
                     "description": "Automatically fetch all pages (default: false)",
                     "default": False,
                 },
+                "describe_query": {
+                    "type": "boolean",
+                    "description": "Include query metadata in response (default: false)",
+                    "default": False,
+                },
+                "record_properties": {
+                    "type": "boolean",
+                    "description": "Include field metadata for each result (default: false)",
+                    "default": False,
+                },
+                "enable_facets": {
+                    "type": "boolean",
+                    "description": "Enable faceted search results (default: false)",
+                    "default": False,
+                },
             },
             "required": ["query"],
         }
 
     async def execute(
-        self, query: str, limit: Optional[int] = None, auto_paginate: bool = False
+        self,
+        query: str,
+        limit: Optional[int] = None,
+        auto_paginate: bool = False,
+        describe_query: bool = False,
+        record_properties: bool = False,
+        enable_facets: bool = False,
     ) -> ToolResult:
         """Execute VQL query."""
         try:
@@ -78,6 +99,14 @@ Use specific tools (documents_query, objects_query) for simple queries."""
                 "Content-Type": "application/x-www-form-urlencoded",
             }
 
+            # Add optional query enhancement headers
+            if describe_query:
+                query_headers["X-VaultAPI-DescribeQuery"] = "true"
+            if record_properties:
+                query_headers["X-VaultAPI-RecordProperties"] = "true"
+            if enable_facets:
+                query_headers["X-VaultAPI-Facets"] = "true"
+
             response = await self.http_client.post(
                 path=path,
                 headers=query_headers,
@@ -92,6 +121,11 @@ Use specific tools (documents_query, objects_query) for simple queries."""
             pagesize = response.get("pagesize", limit if limit else 100)
             total = response.get("total", len(data))
             next_page = response.get("next_page")
+
+            # Extract enhanced metadata (if requested via headers)
+            query_describe = response.get("queryDescribe", {})
+            record_properties_data = response.get("recordProperties", {})
+            facets_data = response.get("facets", [])
 
             # Auto-paginate if requested
             pages_fetched = 1
@@ -115,25 +149,39 @@ Use specific tools (documents_query, objects_query) for simple queries."""
                 pages_fetched=pages_fetched,
             )
 
+            # Build response data
+            result_data = {
+                "results": data,
+                "count": len(data),
+                "total": total,
+                "query": query_to_execute,
+                "response_details": response_details,
+                "pagination": {
+                    "pagesize": pagesize,
+                    "pages_fetched": pages_fetched,
+                    "total_available": total,
+                    "is_complete": auto_paginate or len(data) >= total,
+                },
+            }
+
+            # Include enhanced metadata if present (check if key exists in response, not truthiness)
+            if "queryDescribe" in response:
+                result_data["query_describe"] = query_describe
+            if "recordProperties" in response:
+                result_data["record_properties"] = record_properties_data
+            if "facets" in response:
+                result_data["facets"] = facets_data
+
             return ToolResult(
                 success=True,
-                data={
-                    "results": data,
-                    "count": len(data),
-                    "total": total,
-                    "query": query_to_execute,
-                    "response_details": response_details,
-                    "pagination": {
-                        "pagesize": pagesize,
-                        "pages_fetched": pages_fetched,
-                        "total_available": total,
-                        "is_complete": auto_paginate or len(data) >= total,
-                    },
-                },
+                data=result_data,
                 metadata={
                     "result_count": len(data),
                     "query_type": "vql",
                     "auto_paginate": auto_paginate,
+                    "describe_query": describe_query,
+                    "record_properties": record_properties,
+                    "enable_facets": enable_facets,
                 },
             )
 

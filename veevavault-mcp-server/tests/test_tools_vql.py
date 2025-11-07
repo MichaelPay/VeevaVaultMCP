@@ -194,3 +194,156 @@ class TestVQLValidateTool:
         assert result.data["query"] == "SELECT invalid_field FROM documents"
         assert "Invalid field name" in result.data["error"]
         assert result.metadata["validation"] == "failed"
+
+
+class TestVQLExecuteToolEnhancements:
+    """Tests for VQL Execute Tool enhancements (Phase 3)."""
+
+    @pytest.mark.asyncio
+    async def test_execute_with_describe_query(self, mock_auth_manager, mock_http_client):
+        """Test VQL execution with describe_query header."""
+        mock_http_client.post = AsyncMock(
+            return_value={
+                "data": [{"id": 1}],
+                "total": 1,
+                "pagesize": 100,
+                "queryDescribe": {
+                    "fields": [{"name": "id", "type": "ID"}],
+                    "object": "documents",
+                },
+            }
+        )
+
+        tool = VQLExecuteTool(mock_auth_manager, mock_http_client)
+        result = await tool.execute(
+            query="SELECT id FROM documents",
+            describe_query=True,
+        )
+
+        assert result.success
+        assert "query_describe" in result.data
+        assert result.data["query_describe"]["object"] == "documents"
+        assert result.metadata["describe_query"] is True
+
+        # Verify header was sent
+        call_args = mock_http_client.post.call_args
+        assert call_args.kwargs["headers"]["X-VaultAPI-DescribeQuery"] == "true"
+
+    @pytest.mark.asyncio
+    async def test_execute_with_record_properties(self, mock_auth_manager, mock_http_client):
+        """Test VQL execution with record_properties header."""
+        mock_http_client.post = AsyncMock(
+            return_value={
+                "data": [{"id": 1}],
+                "total": 1,
+                "pagesize": 100,
+                "recordProperties": {
+                    "1": {"editable": True, "locked": False},
+                },
+            }
+        )
+
+        tool = VQLExecuteTool(mock_auth_manager, mock_http_client)
+        result = await tool.execute(
+            query="SELECT id FROM documents",
+            record_properties=True,
+        )
+
+        assert result.success
+        assert "record_properties" in result.data
+        assert "1" in result.data["record_properties"]
+        assert result.metadata["record_properties"] is True
+
+        # Verify header was sent
+        call_args = mock_http_client.post.call_args
+        assert call_args.kwargs["headers"]["X-VaultAPI-RecordProperties"] == "true"
+
+    @pytest.mark.asyncio
+    async def test_execute_with_facets(self, mock_auth_manager, mock_http_client):
+        """Test VQL execution with facets header."""
+        mock_http_client.post = AsyncMock(
+            return_value={
+                "data": [{"id": 1}],
+                "total": 1,
+                "pagesize": 100,
+                "facets": [
+                    {"field": "type__v", "values": [{"value": "protocol__c", "count": 10}]},
+                ],
+            }
+        )
+
+        tool = VQLExecuteTool(mock_auth_manager, mock_http_client)
+        result = await tool.execute(
+            query="SELECT id FROM documents",
+            enable_facets=True,
+        )
+
+        assert result.success
+        assert "facets" in result.data
+        assert len(result.data["facets"]) == 1
+        assert result.data["facets"][0]["field"] == "type__v"
+        assert result.metadata["enable_facets"] is True
+
+        # Verify header was sent
+        call_args = mock_http_client.post.call_args
+        assert call_args.kwargs["headers"]["X-VaultAPI-Facets"] == "true"
+
+    @pytest.mark.asyncio
+    async def test_execute_with_all_headers(self, mock_auth_manager, mock_http_client):
+        """Test VQL execution with all enhancement headers."""
+        mock_http_client.post = AsyncMock(
+            return_value={
+                "data": [{"id": 1}],
+                "total": 1,
+                "pagesize": 100,
+                "queryDescribe": {"fields": []},
+                "recordProperties": {},
+                "facets": [],
+            }
+        )
+
+        tool = VQLExecuteTool(mock_auth_manager, mock_http_client)
+        result = await tool.execute(
+            query="SELECT id FROM documents",
+            describe_query=True,
+            record_properties=True,
+            enable_facets=True,
+        )
+
+        assert result.success
+        assert "query_describe" in result.data
+        assert "record_properties" in result.data
+        assert "facets" in result.data
+
+        # Verify all headers were sent
+        call_args = mock_http_client.post.call_args
+        headers = call_args.kwargs["headers"]
+        assert headers["X-VaultAPI-DescribeQuery"] == "true"
+        assert headers["X-VaultAPI-RecordProperties"] == "true"
+        assert headers["X-VaultAPI-Facets"] == "true"
+
+    @pytest.mark.asyncio
+    async def test_execute_without_enhancement_headers(self, mock_auth_manager, mock_http_client):
+        """Test VQL execution without enhancement headers (default behavior)."""
+        mock_http_client.post = AsyncMock(
+            return_value={
+                "data": [{"id": 1}],
+                "total": 1,
+                "pagesize": 100,
+            }
+        )
+
+        tool = VQLExecuteTool(mock_auth_manager, mock_http_client)
+        result = await tool.execute(query="SELECT id FROM documents")
+
+        assert result.success
+        assert "query_describe" not in result.data
+        assert "record_properties" not in result.data
+        assert "facets" not in result.data
+
+        # Verify enhancement headers were NOT sent
+        call_args = mock_http_client.post.call_args
+        headers = call_args.kwargs["headers"]
+        assert "X-VaultAPI-DescribeQuery" not in headers
+        assert "X-VaultAPI-RecordProperties" not in headers
+        assert "X-VaultAPI-Facets" not in headers

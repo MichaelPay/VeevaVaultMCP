@@ -42,6 +42,12 @@ from .documents import (
     DocumentsDeleteTool,
     DocumentsLockTool,
     DocumentsUnlockTool,
+    DocumentsDownloadFileTool,
+    DocumentsDownloadVersionFileTool,
+    DocumentsBatchCreateTool,
+    DocumentsBatchUpdateTool,
+    DocumentsGetActionsTool,
+    DocumentsExecuteActionTool,
 )
 
 # Object tools
@@ -50,6 +56,10 @@ from .objects import (
     ObjectsGetTool,
     ObjectsCreateTool,
     ObjectsUpdateTool,
+    ObjectsBatchCreateTool,
+    ObjectsBatchUpdateTool,
+    ObjectsGetActionsTool,
+    ObjectsExecuteActionTool,
 )
 
 # VQL tools
@@ -89,11 +99,21 @@ __all__ = [
     "DocumentsDeleteTool",
     "DocumentsLockTool",
     "DocumentsUnlockTool",
+    "DocumentsDownloadFileTool",
+    "DocumentsDownloadVersionFileTool",
+    "DocumentsBatchCreateTool",
+    "DocumentsBatchUpdateTool",
+    "DocumentsGetActionsTool",
+    "DocumentsExecuteActionTool",
     # Objects
     "ObjectsQueryTool",
     "ObjectsGetTool",
     "ObjectsCreateTool",
     "ObjectsUpdateTool",
+    "ObjectsBatchCreateTool",
+    "ObjectsBatchUpdateTool",
+    "ObjectsGetActionsTool",
+    "ObjectsExecuteActionTool",
     # VQL
     "VQLExecuteTool",
     "VQLValidateTool",

@@ -48,12 +48,22 @@ from .tools.documents import (
     DocumentsDeleteTool,
     DocumentsLockTool,
     DocumentsUnlockTool,
+    DocumentsDownloadFileTool,
+    DocumentsDownloadVersionFileTool,
+    DocumentsBatchCreateTool,
+    DocumentsBatchUpdateTool,
+    DocumentsGetActionsTool,
+    DocumentsExecuteActionTool,
 )
 from .tools.objects import (
     ObjectsQueryTool,
     ObjectsGetTool,
     ObjectsCreateTool,
     ObjectsUpdateTool,
+    ObjectsBatchCreateTool,
+    ObjectsBatchUpdateTool,
+    ObjectsGetActionsTool,
+    ObjectsExecuteActionTool,
 )
 from .tools.vql import (
     VQLExecuteTool,
@@ -164,12 +174,22 @@ class VeevaVaultMCPServer:
         self._register_tool(DocumentsDeleteTool)
         self._register_tool(DocumentsLockTool)
         self._register_tool(DocumentsUnlockTool)
+        self._register_tool(DocumentsDownloadFileTool)
+        self._register_tool(DocumentsDownloadVersionFileTool)
+        self._register_tool(DocumentsBatchCreateTool)
+        self._register_tool(DocumentsBatchUpdateTool)
+        self._register_tool(DocumentsGetActionsTool)
+        self._register_tool(DocumentsExecuteActionTool)
 
         # Object tools
         self._register_tool(ObjectsQueryTool)
         self._register_tool(ObjectsGetTool)
         self._register_tool(ObjectsCreateTool)
         self._register_tool(ObjectsUpdateTool)
+        self._register_tool(ObjectsBatchCreateTool)
+        self._register_tool(ObjectsBatchUpdateTool)
+        self._register_tool(ObjectsGetActionsTool)
+        self._register_tool(ObjectsExecuteActionTool)
 
         # VQL tools
         self._register_tool(VQLExecuteTool)

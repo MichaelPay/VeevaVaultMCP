@@ -243,3 +243,196 @@ class TestObjectsUpdateTool:
 
         assert result.success
         assert "status__v" in result.data["updated_fields"]
+
+
+class TestObjectsBatchCreateTool:
+    """Tests for ObjectsBatchCreateTool."""
+
+    @pytest.mark.asyncio
+    async def test_batch_create_success(self, mock_auth_manager, mock_http_client):
+        """Test batch create with all successes."""
+        from veevavault_mcp.tools.objects import ObjectsBatchCreateTool
+        
+        mock_http_client.post = AsyncMock(
+            return_value={
+                "responseStatus": "SUCCESS",
+                "data": [
+                    {"responseStatus": "SUCCESS", "id": "V0P000000001001"},
+                    {"responseStatus": "SUCCESS", "id": "V0P000000001002"},
+                ],
+            }
+        )
+
+        tool = ObjectsBatchCreateTool(mock_auth_manager, mock_http_client)
+        result = await tool.execute(
+            object_name="product__v",
+            records=[
+                {"name__v": "Product 1", "status__v": "active__v"},
+                {"name__v": "Product 2", "status__v": "active__v"},
+            ],
+        )
+
+        assert result.success
+        assert result.data["total"] == 2
+        assert result.data["successes"] == 2
+        assert result.data["failures"] == 0
+        assert result.data["object_name"] == "product__v"
+
+        # Verify correct endpoint
+        call_args = mock_http_client.post.call_args
+        assert "/objects/product__v" in call_args.kwargs["path"]
+
+    @pytest.mark.asyncio
+    async def test_batch_create_partial_success(self, mock_auth_manager, mock_http_client):
+        """Test batch create with partial success."""
+        from veevavault_mcp.tools.objects import ObjectsBatchCreateTool
+        
+        mock_http_client.post = AsyncMock(
+            return_value={
+                "responseStatus": "SUCCESS",
+                "data": [
+                    {"responseStatus": "SUCCESS", "id": "V0P000000001001"},
+                    {"responseStatus": "FAILURE", "errors": [{"message": "Required field missing"}]},
+                ],
+            }
+        )
+
+        tool = ObjectsBatchCreateTool(mock_auth_manager, mock_http_client)
+        result = await tool.execute(
+            object_name="product__v",
+            records=[
+                {"name__v": "Product 1", "status__v": "active__v"},
+                {"status__v": "active__v"},
+            ],
+        )
+
+        assert not result.success
+        assert result.data["successes"] == 1
+        assert result.data["failures"] == 1
+
+
+class TestObjectsBatchUpdateTool:
+    """Tests for ObjectsBatchUpdateTool."""
+
+    @pytest.mark.asyncio
+    async def test_batch_update_success(self, mock_auth_manager, mock_http_client):
+        """Test batch update with all successes."""
+        from veevavault_mcp.tools.objects import ObjectsBatchUpdateTool
+        
+        mock_http_client.put = AsyncMock(
+            return_value={
+                "responseStatus": "SUCCESS",
+                "data": [
+                    {"responseStatus": "SUCCESS", "id": "V0P000000001001"},
+                    {"responseStatus": "SUCCESS", "id": "V0P000000001002"},
+                ],
+            }
+        )
+
+        tool = ObjectsBatchUpdateTool(mock_auth_manager, mock_http_client)
+        result = await tool.execute(
+            object_name="product__v",
+            updates=[
+                {"id": "V0P000000001001", "status__v": "inactive__v"},
+                {"id": "V0P000000001002", "status__v": "inactive__v"},
+            ],
+        )
+
+        assert result.success
+        assert result.data["total"] == 2
+        assert result.data["successes"] == 2
+        assert result.data["failures"] == 0
+
+        # Verify correct endpoint and method
+        call_args = mock_http_client.put.call_args
+        assert "/objects/product__v" in call_args.kwargs["path"]
+
+
+class TestObjectsGetActionsTool:
+    """Tests for ObjectsGetActionsTool."""
+
+    @pytest.mark.asyncio
+    async def test_get_actions_success(self, mock_auth_manager, mock_http_client):
+        """Test getting object actions."""
+        from veevavault_mcp.tools.objects import ObjectsGetActionsTool
+        
+        mock_http_client.get = AsyncMock(
+            return_value={
+                "responseStatus": "SUCCESS",
+                "lifecycle_actions__v": [
+                    {"name": "Activate", "label": "Activate Product"},
+                    {"name": "Retire", "label": "Retire Product"},
+                ],
+            }
+        )
+
+        tool = ObjectsGetActionsTool(mock_auth_manager, mock_http_client)
+        result = await tool.execute(object_name="product__v", record_id="V0P000000001001")
+
+        assert result.success
+        assert result.data["object_name"] == "product__v"
+        assert result.data["record_id"] == "V0P000000001001"
+        assert result.data["count"] == 2
+        assert len(result.data["actions"]) == 2
+
+        # Verify correct endpoint
+        call_args = mock_http_client.get.call_args
+        assert "/objects/product__v/V0P000000001001/actions" in call_args.kwargs["path"]
+
+
+class TestObjectsExecuteActionTool:
+    """Tests for ObjectsExecuteActionTool."""
+
+    @pytest.mark.asyncio
+    async def test_execute_action_success(self, mock_auth_manager, mock_http_client):
+        """Test executing object action."""
+        from veevavault_mcp.tools.objects import ObjectsExecuteActionTool
+        
+        mock_http_client.post = AsyncMock(
+            return_value={
+                "responseStatus": "SUCCESS",
+                "id": "V0P000000001001",
+            }
+        )
+
+        tool = ObjectsExecuteActionTool(mock_auth_manager, mock_http_client)
+        result = await tool.execute(
+            object_name="product__v",
+            record_id="V0P000000001001",
+            action_name="Activate",
+            action_data={"reason": "Ready for production"},
+        )
+
+        assert result.success
+        assert result.data["object_name"] == "product__v"
+        assert result.data["record_id"] == "V0P000000001001"
+        assert result.data["action_name"] == "Activate"
+
+        # Verify correct endpoint
+        call_args = mock_http_client.post.call_args
+        assert "/objects/product__v/V0P000000001001/actions/Activate" in call_args.kwargs["path"]
+
+    @pytest.mark.asyncio
+    async def test_execute_action_no_data(self, mock_auth_manager, mock_http_client):
+        """Test executing action without action data."""
+        from veevavault_mcp.tools.objects import ObjectsExecuteActionTool
+        
+        mock_http_client.post = AsyncMock(
+            return_value={
+                "responseStatus": "SUCCESS",
+                "id": "V0P000000001001",
+            }
+        )
+
+        tool = ObjectsExecuteActionTool(mock_auth_manager, mock_http_client)
+        result = await tool.execute(
+            object_name="product__v",
+            record_id="V0P000000001001",
+            action_name="Activate",
+        )
+
+        assert result.success
+
+        # Verify empty dict was sent
+        call_args = mock_http_client.post.call_args
+        assert call_args.kwargs["json"] == {}

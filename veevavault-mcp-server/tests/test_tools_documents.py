@@ -313,3 +313,217 @@ class TestDocumentsUnlockTool:
         # Verify correct API path
         call_args = mock_http_client.delete.call_args
         assert "/documents/123/lock" in call_args.kwargs["path"]
+
+
+class TestDocumentsDownloadFileTool:
+    """Tests for DocumentsDownloadFileTool."""
+
+    @pytest.mark.asyncio
+    async def test_download_file_success(self, mock_auth_manager, mock_http_client):
+        """Test downloading document file."""
+        from veevavault_mcp.tools.documents import DocumentsDownloadFileTool
+        
+        mock_http_client.get = AsyncMock(
+            return_value={
+                "responseStatus": "SUCCESS",
+                "file": "test.pdf",
+                "url": "https://vault.example.com/files/test.pdf",
+            }
+        )
+
+        tool = DocumentsDownloadFileTool(mock_auth_manager, mock_http_client)
+        result = await tool.execute(document_id=123)
+
+        assert result.success
+        assert result.data["document_id"] == 123
+        assert "download_url" in result.data
+        assert "response" in result.data
+        assert result.data["response"]["url"] == "https://vault.example.com/files/test.pdf"
+
+        # Verify correct endpoint
+        call_args = mock_http_client.get.call_args
+        assert "/documents/123/file" in call_args.kwargs["path"]
+
+
+class TestDocumentsDownloadVersionFileTool:
+    """Tests for DocumentsDownloadVersionFileTool."""
+
+    @pytest.mark.asyncio
+    async def test_download_version_file_success(self, mock_auth_manager, mock_http_client):
+        """Test downloading specific version file."""
+        from veevavault_mcp.tools.documents import DocumentsDownloadVersionFileTool
+        
+        mock_http_client.get = AsyncMock(
+            return_value={
+                "responseStatus": "SUCCESS",
+                "file": "test_v1.0.pdf",
+                "url": "https://vault.example.com/files/test_v1.0.pdf",
+            }
+        )
+
+        tool = DocumentsDownloadVersionFileTool(mock_auth_manager, mock_http_client)
+        result = await tool.execute(document_id=123, major_version=1, minor_version=0)
+
+        assert result.success
+        assert result.data["document_id"] == 123
+        assert result.data["version"] == "1.0"
+        assert "download_url" in result.data
+        assert "response" in result.data
+
+        # Verify correct endpoint
+        call_args = mock_http_client.get.call_args
+        assert "/documents/123/versions/1/0/file" in call_args.kwargs["path"]
+
+
+class TestDocumentsBatchCreateTool:
+    """Tests for DocumentsBatchCreateTool."""
+
+    @pytest.mark.asyncio
+    async def test_batch_create_success(self, mock_auth_manager, mock_http_client):
+        """Test batch create with all successes."""
+        from veevavault_mcp.tools.documents import DocumentsBatchCreateTool
+        
+        mock_http_client.post = AsyncMock(
+            return_value={
+                "responseStatus": "SUCCESS",
+                "data": [
+                    {"responseStatus": "SUCCESS", "id": 1},
+                    {"responseStatus": "SUCCESS", "id": 2},
+                ],
+            }
+        )
+
+        tool = DocumentsBatchCreateTool(mock_auth_manager, mock_http_client)
+        result = await tool.execute(
+            documents=[
+                {"name": "Doc1", "type": "protocol__c", "lifecycle": "base__v", "title": "Title1"},
+                {"name": "Doc2", "type": "protocol__c", "lifecycle": "base__v", "title": "Title2"},
+            ]
+        )
+
+        assert result.success
+        assert result.data["total"] == 2
+        assert result.data["successes"] == 2
+        assert result.data["failures"] == 0
+
+    @pytest.mark.asyncio
+    async def test_batch_create_partial_success(self, mock_auth_manager, mock_http_client):
+        """Test batch create with partial success."""
+        from veevavault_mcp.tools.documents import DocumentsBatchCreateTool
+        
+        mock_http_client.post = AsyncMock(
+            return_value={
+                "responseStatus": "SUCCESS",
+                "data": [
+                    {"responseStatus": "SUCCESS", "id": 1},
+                    {"responseStatus": "FAILURE", "errors": [{"message": "Invalid type"}]},
+                ],
+            }
+        )
+
+        tool = DocumentsBatchCreateTool(mock_auth_manager, mock_http_client)
+        result = await tool.execute(
+            documents=[
+                {"name": "Doc1", "type": "protocol__c", "lifecycle": "base__v", "title": "Title1"},
+                {"name": "Doc2", "type": "invalid__c", "lifecycle": "base__v", "title": "Title2"},
+            ]
+        )
+
+        assert not result.success
+        assert result.data["total"] == 2
+        assert result.data["successes"] == 1
+        assert result.data["failures"] == 1
+
+
+class TestDocumentsBatchUpdateTool:
+    """Tests for DocumentsBatchUpdateTool."""
+
+    @pytest.mark.asyncio
+    async def test_batch_update_success(self, mock_auth_manager, mock_http_client):
+        """Test batch update with all successes."""
+        from veevavault_mcp.tools.documents import DocumentsBatchUpdateTool
+        
+        mock_http_client.put = AsyncMock(
+            return_value={
+                "responseStatus": "SUCCESS",
+                "data": [
+                    {"responseStatus": "SUCCESS", "id": 1},
+                    {"responseStatus": "SUCCESS", "id": 2},
+                ],
+            }
+        )
+
+        tool = DocumentsBatchUpdateTool(mock_auth_manager, mock_http_client)
+        result = await tool.execute(
+            updates=[
+                {"id": 1, "title__v": "Updated Title 1"},
+                {"id": 2, "title__v": "Updated Title 2"},
+            ]
+        )
+
+        assert result.success
+        assert result.data["total"] == 2
+        assert result.data["successes"] == 2
+        assert result.data["failures"] == 0
+
+
+class TestDocumentsGetActionsTool:
+    """Tests for DocumentsGetActionsTool."""
+
+    @pytest.mark.asyncio
+    async def test_get_actions_success(self, mock_auth_manager, mock_http_client):
+        """Test getting document actions."""
+        from veevavault_mcp.tools.documents import DocumentsGetActionsTool
+        
+        mock_http_client.get = AsyncMock(
+            return_value={
+                "responseStatus": "SUCCESS",
+                "lifecycle_actions__v": [
+                    {"name": "Approve", "label": "Approve Document"},
+                    {"name": "Reject", "label": "Reject Document"},
+                ],
+            }
+        )
+
+        tool = DocumentsGetActionsTool(mock_auth_manager, mock_http_client)
+        result = await tool.execute(document_id=123)
+
+        assert result.success
+        assert result.data["document_id"] == 123
+        assert result.data["count"] == 2
+        assert len(result.data["actions"]) == 2
+
+        # Verify correct endpoint
+        call_args = mock_http_client.get.call_args
+        assert "/documents/123/actions" in call_args.kwargs["path"]
+
+
+class TestDocumentsExecuteActionTool:
+    """Tests for DocumentsExecuteActionTool."""
+
+    @pytest.mark.asyncio
+    async def test_execute_action_success(self, mock_auth_manager, mock_http_client):
+        """Test executing document action."""
+        from veevavault_mcp.tools.documents import DocumentsExecuteActionTool
+        
+        mock_http_client.post = AsyncMock(
+            return_value={
+                "responseStatus": "SUCCESS",
+                "id": 123,
+            }
+        )
+
+        tool = DocumentsExecuteActionTool(mock_auth_manager, mock_http_client)
+        result = await tool.execute(
+            document_id=123,
+            action_name="Approve",
+            action_data={"comment": "Looks good"},
+        )
+
+        assert result.success
+        assert result.data["document_id"] == 123
+        assert result.data["action_name"] == "Approve"
+
+        # Verify correct endpoint
+        call_args = mock_http_client.post.call_args
+        assert "/documents/123/actions/Approve" in call_args.kwargs["path"]
