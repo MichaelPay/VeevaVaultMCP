@@ -8,7 +8,11 @@ from .errors import (
     NotFoundError,
     RateLimitError,
     APIError,
+    ConfigurationError,
+    CacheError,
+    TimeoutError,
 )
+from .http import VaultHTTPClient
 
 __all__ = [
     "VeevaVaultError",
@@ -18,4 +22,8 @@ __all__ = [
     "NotFoundError",
     "RateLimitError",
     "APIError",
+    "ConfigurationError",
+    "CacheError",
+    "TimeoutError",
+    "VaultHTTPClient",
 ]
